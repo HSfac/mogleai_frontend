@@ -1,14 +1,33 @@
+'use client';
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types/auth';
 import { authService } from '@/services/authService';
+import { userService } from '@/services/userService';
 import { useRouter } from 'next/navigation';
+
+interface User {
+  _id: string;
+  email: string;
+  username: string;
+  profileImage?: string;
+  tokens: number;
+  totalConversations: number;
+  creatorLevel: string;
+  popularCharacters: number;
+  isSubscribed: boolean;
+  subscriptionEndDate?: Date;
+  isVerified: boolean;
+  isAdultVerified: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, username: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,21 +38,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetchUser();
-    } else {
-      setLoading(false);
+    if (typeof window !== 'undefined') {
+      const token = authService.getToken();
+      if (token) {
+        fetchUser();
+      } else {
+        setLoading(false);
+      }
     }
   }, []);
 
   const fetchUser = async () => {
     try {
-      const userData = await authService.getProfile();
+      const userData = await userService.getMe();
       setUser(userData);
     } catch (error) {
       console.error('사용자 정보를 가져오는데 실패했습니다:', error);
-      localStorage.removeItem('token');
+      authService.logout();
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -42,22 +64,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      const response = await authService.login({ email, password });
-      setUser(response.user);
+      await authService.login(email, password);
+      await fetchUser();
       router.push('/');
-    } finally {
+    } catch (error) {
       setLoading(false);
+      throw error;
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (email: string, password: string, username: string) => {
     setLoading(true);
     try {
-      const response = await authService.register({ username, email, password });
-      setUser(response.user);
+      await authService.register(email, password, username);
+      await fetchUser();
       router.push('/');
-    } finally {
+    } catch (error) {
       setLoading(false);
+      throw error;
     }
   };
 
@@ -67,8 +91,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   };
 
+  const refreshUser = async () => {
+    await fetchUser();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        refreshUser,
+        isAuthenticated: !!user
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

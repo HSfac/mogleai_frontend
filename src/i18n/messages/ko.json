@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "몽글AI",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "register": "회원가입",
+    "search": "검색",
+    "cancel": "취소",
+    "confirm": "확인",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "수정",
+    "back": "뒤로",
+    "next": "다음",
+    "loading": "로딩 중...",
+    "error": "오류",
+    "success": "성공",
+    "profile": "프로필 관리"
+  },
+  "nav": {
+    "home": "홈",
+    "chat": "채팅",
+    "create": "생성",
+    "bonly": "B ONLY",
+    "mypage": "마이",
+    "characters": "캐릭터",
+    "explore": "탐색",
+    "create_character": "캐릭터 만들기",
+    "my_characters": "내 캐릭터",
+    "favorites": "즐겨찾기",
+    "settings": "설정",
+    "tokens": "토큰 충전",
+    "new_ranking": "신작 랭킹",
+    "popular_ranking": "인기 랭킹",
+    "chat_list": "대화 목록"
+  },
+  "home": {
+    "hero_title": "크리에이터 클럽 & B.ONLY 가이드",
+    "hero_subtitle": "당신만의 특별한 AI 캐릭터와 대화하세요",
+    "hero_button": "캐릭터 둘러보기",
+    "tabs": {
+      "home": "홈",
+      "new_ranking": "신작 랭킹",
+      "ranking": "랭킹",
+      "new": "신작",
+      "recommended": "추천",
+      "following": "팔로잉"
+    },
+    "badges": {
+      "bonly": "B.ONLY",
+      "new": "N",
+      "hot": "🔥",
+      "trending": "📈"
+    },
+    "section_new": "✨ 지금 뜨는 신작 캐릭터",
+    "section_popular": "🔥 인기 캐릭터"
+  },
+  "auth": {
+    "login_title": "로그인",
+    "login_welcome": "어서오세요! 👋",
+    "login_description": "나만의 AI 캐릭터와 대화를 시작하세요",
+    "register_title": "회원가입",
+    "register_description": "몽글AI와 함께 새로운 경험을 시작하세요",
+    "email": "이메일",
+    "password": "비밀번호",
+    "password_confirm": "비밀번호 확인",
+    "forgot_password": "비밀번호를 잊으셨나요?",
+    "no_account": "계정이 없으신가요?",
+    "have_account": "이미 계정이 있으신가요?",
+    "social_login": "소셜 로그인",
+    "or": "또는",
+    "login_button": "로그인",
+    "register_button": "회원가입하기",
+    "username": "사용자명"
+  },
+  "tokens": {
+    "balance": "보유 토큰",
+    "purchase": "토큰 구매",
+    "history": "사용 내역",
+    "charge": "충전하기",
+    "price": "₩{amount}",
+    "tokens_amount": "{amount} 토큰"
+  },
+  "chat": {
+    "send": "전송",
+    "typing": "입력 중...",
+    "new_chat": "새 대화",
+    "character_select": "캐릭터 선택"
+  },
+  "character": {
+    "creator": "크리에이터",
+    "likes": "좋아요",
+    "chats": "대화",
+    "tags": "태그",
+    "description": "설명",
+    "start_chat": "대화 시작"
+  }
+}

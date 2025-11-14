@@ -22,11 +22,11 @@ import {
   PopoverCloseButton
 } from '@chakra-ui/popover';
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { FaBell } from 'react-icons/fa';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useColorModeValue } from '@chakra-ui/color-mode';
+import { useAuth } from '@/contexts/AuthContext';
+import { notificationService } from '@/services/notificationService';
 
 interface Notification {
   _id: string;
@@ -43,7 +43,7 @@ export default function NotificationSystem() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { data: session } = useSession();
+  const { isAuthenticated } = useAuth();
   const toast = useToast();
   const router = useRouter();
   
@@ -51,27 +51,19 @@ export default function NotificationSystem() {
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   useEffect(() => {
-    if (session) {
+    if (isAuthenticated) {
       fetchNotifications();
     }
-  }, [session]);
+  }, [isAuthenticated]);
 
   const fetchNotifications = async () => {
-    if (!session) return;
+    if (!isAuthenticated) return;
     
     setIsLoading(true);
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/notifications`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
-      );
-      
-      setNotifications(response.data);
-      setUnreadCount(response.data.filter((n: Notification) => !n.isRead).length);
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+      setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
     } catch (error) {
       console.error('알림을 불러오는데 실패했습니다:', error);
     } finally {
@@ -80,18 +72,10 @@ export default function NotificationSystem() {
   };
 
   const markAsRead = async (id: string) => {
-    if (!session) return;
+    if (!isAuthenticated) return;
     
     try {
-      await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notifications/${id}/read`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
-      );
+      await notificationService.markAsRead(id);
       
       // 로컬 상태 업데이트
       setNotifications(
@@ -106,18 +90,10 @@ export default function NotificationSystem() {
   };
 
   const markAllAsRead = async () => {
-    if (!session) return;
+    if (!isAuthenticated) return;
     
     try {
-      await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notifications/read-all`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-          },
-        }
-      );
+      await notificationService.markAllAsRead();
       
       // 로컬 상태 업데이트
       setNotifications(
@@ -161,7 +137,7 @@ export default function NotificationSystem() {
     }
   };
 
-  if (!session) return null;
+  if (!isAuthenticated) return null;
 
   return (
     <Popover placement="bottom-end">

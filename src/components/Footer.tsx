@@ -2,6 +2,7 @@
 
 import { Box, Container, Typography, Grid, Link, Divider } from '@mui/material';
 
+
 export default function Footer() {
   return (
     <Box component="footer" sx={{ bgcolor: 'grey.100', py: 6, mt: 'auto' }}>

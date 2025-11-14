@@ -1,96 +1,118 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  BottomNavigation, 
-  BottomNavigationAction, 
-  Paper 
+import { useMemo } from 'react';
+import {
+  BottomNavigation,
+  BottomNavigationAction,
+  Box,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
-import SearchIcon from '@mui/icons-material/Search';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import ChatIcon from '@mui/icons-material/Chat';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import PersonIcon from '@mui/icons-material/Person';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTranslations } from 'next-intl';
 
 export default function MobileNavBar() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const [value, setValue] = useState(0);
+  const pathname = usePathname();
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
+  const { isAuthenticated } = useAuth();
+  const t = useTranslations();
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-    
-    switch(newValue) {
+  // Extract locale from pathname
+  const locale = pathname.split('/')[1] || 'ko';
+  const getLocalePath = (path: string) => `/${locale}${path}`;
+
+  const value = useMemo(() => {
+    const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';
+    if (pathWithoutLocale === '/') return 0;
+    if (pathWithoutLocale === '/chats') return 1;
+    if (pathWithoutLocale?.startsWith('/characters/create')) return 2;
+    if (pathWithoutLocale?.startsWith('/characters')) return 3;
+    if (pathWithoutLocale?.startsWith('/profile')) return 4;
+    return 0;
+  }, [pathname, locale]);
+
+  const handleNavigate = (index: number) => {
+    switch (index) {
       case 0:
-        router.push('/');
+        router.push(getLocalePath('/'));
         break;
       case 1:
-        router.push('/characters');
+        router.push(getLocalePath('/chats'));
         break;
       case 2:
-        router.push('/characters/create');
+        router.push(getLocalePath('/characters/create'));
         break;
       case 3:
-        router.push('/chat');
+        router.push(getLocalePath('/characters'));
         break;
       case 4:
-        if (session) {
-          router.push('/profile');
+        if (isAuthenticated) {
+          router.push(getLocalePath('/profile'));
         } else {
-          router.push('/login');
+          router.push(getLocalePath('/login'));
         }
-        break;
-      default:
         break;
     }
   };
 
+  if (!isMdDown) {
+    return null;
+  }
+
   return (
-    <Paper 
-      sx={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '100%',
-        maxWidth: '520px', // PageLayout과 동일한 너비로 설정
-        zIndex: 1000,
-        borderRadius: '0'
-      }} 
-      elevation={3}
+    <Box
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        bgcolor: '#1f1f1f',
+        borderTop: '1px solid #333',
+        zIndex: 1200,
+        pb: 'env(safe-area-inset-bottom)',
+      }}
     >
       <BottomNavigation
         showLabels
         value={value}
-        onChange={handleChange}
-        sx={{ 
-          height: '60px',
+        onChange={(_, newValue) => handleNavigate(newValue)}
+        sx={{
+          bgcolor: 'transparent',
+          height: 70,
           '& .MuiBottomNavigationAction-root': {
-            color: '#999',
+            color: '#666',
+            minWidth: 'auto',
             '&.Mui-selected': {
-              color: '#ff5e62'
-            }
-          }
+              color: '#ff3366',
+            },
+          },
+          '& .MuiBottomNavigationAction-label': {
+            fontSize: '0.7rem',
+            fontWeight: 500,
+            '&.Mui-selected': {
+              fontSize: '0.7rem',
+              fontWeight: 700,
+            },
+          },
         }}
       >
-        <BottomNavigationAction label="홈" icon={<HomeIcon />} />
-        <BottomNavigationAction label="탐색" icon={<SearchIcon />} />
-        <BottomNavigationAction 
-          label="생성" 
-          icon={
-            <AddCircleIcon 
-              sx={{ 
-                fontSize: '32px', 
-                color: '#ff5e62'
-              }} 
-            />
-          } 
+        <BottomNavigationAction label={t('nav.home')} icon={<HomeIcon />} />
+        <BottomNavigationAction label={t('nav.chat')} icon={<ChatIcon />} />
+        <BottomNavigationAction
+          label={t('nav.create')}
+          icon={<AddCircleIcon sx={{ fontSize: 32 }} />}
         />
-        <BottomNavigationAction label="대화" icon={<ChatIcon />} />
-        <BottomNavigationAction label="프로필" icon={<PersonIcon />} />
+        <BottomNavigationAction label={t('nav.bonly')} icon={<LocalOfferIcon />} />
+        <BottomNavigationAction label={t('nav.mypage')} icon={<PersonIcon />} />
       </BottomNavigation>
-    </Paper>
+    </Box>
   );
-} 
+}

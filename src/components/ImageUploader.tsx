@@ -17,8 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { useState, useRef } from 'react';
 import { FaUpload, FaImage, FaTrash } from 'react-icons/fa';
-import axios from 'axios';
-import { useSession } from 'next-auth/react';
+import api from '@/lib/api';
 
 interface ImageUploaderProps {
   initialImage?: string;
@@ -31,7 +30,6 @@ export default function ImageUploader({ initialImage, onImageUpload }: ImageUplo
   const [dragActive, setDragActive] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
-  const { data: session } = useSession();
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -99,13 +97,12 @@ export default function ImageUploader({ initialImage, onImageUpload }: ImageUplo
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/upload/image`,
+      const response = await api.post(
+        '/upload/image',
         formData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${session?.accessToken}`,
           },
         }
       );

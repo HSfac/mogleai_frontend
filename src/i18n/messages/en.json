@@ -1,0 +1,98 @@
+{
+  "common": {
+    "appName": "MonglAI",
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Sign Up",
+    "search": "Search",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "profile": "Manage Profile"
+  },
+  "nav": {
+    "home": "Home",
+    "chat": "Chat",
+    "create": "Create",
+    "bonly": "B ONLY",
+    "mypage": "My Page",
+    "characters": "Characters",
+    "explore": "Explore",
+    "create_character": "Create Character",
+    "my_characters": "My Characters",
+    "favorites": "Favorites",
+    "settings": "Settings",
+    "tokens": "Buy Tokens",
+    "new_ranking": "New Rankings",
+    "popular_ranking": "Popular Rankings",
+    "chat_list": "Chat List"
+  },
+  "home": {
+    "hero_title": "Creator Club & B.ONLY Guide",
+    "hero_subtitle": "Start a special conversation with your own AI character",
+    "hero_button": "Browse Characters",
+    "tabs": {
+      "home": "Home",
+      "new_ranking": "New Rankings",
+      "ranking": "Rankings",
+      "new": "New",
+      "recommended": "Recommended",
+      "following": "Following"
+    },
+    "badges": {
+      "bonly": "B.ONLY",
+      "new": "N",
+      "hot": "🔥",
+      "trending": "📈"
+    },
+    "section_new": "✨ Trending New Characters",
+    "section_popular": "🔥 Popular Characters"
+  },
+  "auth": {
+    "login_title": "Login",
+    "login_welcome": "Welcome! 👋",
+    "login_description": "Start chatting with your own AI character",
+    "register_title": "Sign Up",
+    "register_description": "Start a new experience with MonglAI",
+    "email": "Email",
+    "password": "Password",
+    "password_confirm": "Confirm Password",
+    "forgot_password": "Forgot password?",
+    "no_account": "Don't have an account?",
+    "have_account": "Already have an account?",
+    "social_login": "Social Login",
+    "or": "or",
+    "login_button": "Login",
+    "register_button": "Sign Up",
+    "username": "Username"
+  },
+  "tokens": {
+    "balance": "Token Balance",
+    "purchase": "Purchase Tokens",
+    "history": "Usage History",
+    "charge": "Charge",
+    "price": "${amount}",
+    "tokens_amount": "{amount} Tokens"
+  },
+  "chat": {
+    "send": "Send",
+    "typing": "Typing...",
+    "new_chat": "New Chat",
+    "character_select": "Select Character"
+  },
+  "character": {
+    "creator": "Creator",
+    "likes": "Likes",
+    "chats": "Chats",
+    "tags": "Tags",
+    "description": "Description",
+    "start_chat": "Start Chat"
+  }
+}

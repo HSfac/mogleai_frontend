@@ -1,29 +1,48 @@
 import api from '@/lib/api';
-import { AuthResponse, LoginRequest, RegisterRequest, User } from '@/types/auth';
 
 export const authService = {
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/login', data);
-    localStorage.setItem('token', response.data.access_token);
+  async login(email: string, password: string) {
+    const response = await api.post('/auth/login', { email, password });
+    if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
+    }
     return response.data;
   },
 
-  async register(data: RegisterRequest): Promise<AuthResponse> {
-    const response = await api.post<AuthResponse>('/auth/register', data);
-    localStorage.setItem('token', response.data.access_token);
+  async register(email: string, password: string, username: string) {
+    const response = await api.post('/auth/register', { email, password, username });
+    if (response.data.access_token) {
+      localStorage.setItem('token', response.data.access_token);
+    }
     return response.data;
   },
 
-  async getProfile(): Promise<User> {
-    const response = await api.get<User>('/auth/profile');
+  async getProfile() {
+    const response = await api.get('/auth/profile');
     return response.data;
   },
 
-  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await api.post('/auth/change-password', { currentPassword, newPassword });
+  async changePassword(currentPassword: string, newPassword: string) {
+    const response = await api.post('/auth/change-password', { currentPassword, newPassword });
+    return response.data;
   },
 
-  logout(): void {
-    localStorage.removeItem('token');
-  }
+  logout() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+  },
+
+  // 토큰 확인
+  getToken() {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  },
+
+  // 로그인 여부 확인
+  isAuthenticated() {
+    return !!this.getToken();
+  },
 }; 
