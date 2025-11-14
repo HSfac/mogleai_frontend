@@ -326,7 +326,7 @@ export default function CharactersPage() {
                     transition: 'all 0.3s',
                     '&:hover': {
                       transform: 'translateY(-8px)',
-                      boxShadow: '0 12px 48px rgba(102,126,234,0.15)',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
                     },
                   }}
                 >
