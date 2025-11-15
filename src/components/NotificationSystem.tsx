@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { useColorModeValue } from '@chakra-ui/color-mode';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from '@/services/notificationService';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 interface Notification {
   _id: string;
@@ -41,12 +42,21 @@ interface Notification {
 
 export default function NotificationSystem() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { isAuthenticated } = useAuth();
   const toast = useToast();
   const router = useRouter();
-  
+
+  // WebSocket 훅 사용
+  const {
+    isConnected,
+    unreadCount,
+    newNotification,
+    markAsRead: socketMarkAsRead,
+    markAllAsRead: socketMarkAllAsRead,
+    clearNewNotification,
+  } = useNotificationSocket();
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
@@ -56,14 +66,35 @@ export default function NotificationSystem() {
     }
   }, [isAuthenticated]);
 
+  // 새 알림 수신 시 처리
+  useEffect(() => {
+    if (newNotification) {
+      // 알림 목록에 추가
+      setNotifications((prev) => [newNotification, ...prev]);
+
+      // Toast 알림 표시
+      toast({
+        title: newNotification.title,
+        description: newNotification.message,
+        status: newNotification.type === 'error' ? 'error' :
+                newNotification.type === 'warning' ? 'warning' :
+                newNotification.type === 'success' ? 'success' : 'info',
+        duration: 5000,
+        isClosable: true,
+        position: 'top-right',
+      });
+
+      clearNewNotification();
+    }
+  }, [newNotification, toast, clearNewNotification]);
+
   const fetchNotifications = async () => {
     if (!isAuthenticated) return;
-    
+
     setIsLoading(true);
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data);
-      setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
     } catch (error) {
       console.error('알림을 불러오는데 실패했습니다:', error);
     } finally {
@@ -73,17 +104,22 @@ export default function NotificationSystem() {
 
   const markAsRead = async (id: string) => {
     if (!isAuthenticated) return;
-    
+
     try {
-      await notificationService.markAsRead(id);
-      
+      // WebSocket으로 먼저 전송 (실시간 업데이트)
+      if (isConnected) {
+        socketMarkAsRead(id);
+      } else {
+        // WebSocket 연결이 없으면 HTTP API 사용
+        await notificationService.markAsRead(id);
+      }
+
       // 로컬 상태 업데이트
       setNotifications(
-        notifications.map((n) => 
+        notifications.map((n) =>
           n._id === id ? { ...n, isRead: true } : n
         )
       );
-      setUnreadCount(Math.max(0, unreadCount - 1));
     } catch (error) {
       console.error('알림 상태 변경에 실패했습니다:', error);
     }
@@ -91,16 +127,20 @@ export default function NotificationSystem() {
 
   const markAllAsRead = async () => {
     if (!isAuthenticated) return;
-    
+
     try {
-      await notificationService.markAllAsRead();
-      
+      // WebSocket으로 먼저 전송
+      if (isConnected) {
+        socketMarkAllAsRead();
+      } else {
+        await notificationService.markAllAsRead();
+      }
+
       // 로컬 상태 업데이트
       setNotifications(
         notifications.map((n) => ({ ...n, isRead: true }))
       );
-      setUnreadCount(0);
-      
+
       toast({
         title: '모든 알림을 읽음으로 표시했습니다.',
         status: 'success',

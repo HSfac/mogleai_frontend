@@ -65,16 +65,6 @@ export default function MobileHeader() {
 
       {/* Actions */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography
-          variant="body2"
-          sx={{
-            color: '#999',
-            fontSize: '0.85rem',
-            mr: 1,
-          }}
-        >
-          앱 설치
-        </Typography>
         <IconButton
           size="small"
           sx={{ color: '#999' }}

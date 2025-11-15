@@ -1,12 +1,26 @@
 import { Character } from '@/types/character';
 import { api } from '@/lib/api';
 
-export async function fetchCharacters(): Promise<Character[]> {
+export async function fetchCharacters(query?: string, tags?: string[]): Promise<Character[]> {
   try {
-    const response = await api.get('/characters');
+    const params: any = {};
+    if (query) params.query = query;
+    if (tags && tags.length > 0) params.tags = tags.join(',');
+
+    const response = await api.get('/characters', { params });
     return response.data;
   } catch (error) {
     console.error('캐릭터 데이터를 가져오는 중 오류가 발생했습니다:', error);
+    throw error;
+  }
+}
+
+export async function fetchPopularCharacters(): Promise<Character[]> {
+  try {
+    const response = await api.get('/characters/popular');
+    return response.data;
+  } catch (error) {
+    console.error('인기 캐릭터 데이터를 가져오는 중 오류가 발생했습니다:', error);
     throw error;
   }
 }

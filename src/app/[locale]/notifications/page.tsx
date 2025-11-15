@@ -67,14 +67,20 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, [isAuthenticated, router]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (page: number = 1) => {
     setLoading(true);
     try {
       const [data, unread] = await Promise.all([
-        notificationService.getNotifications(),
+        notificationService.getNotifications(page, 50), // 페이지당 50개
         notificationService.getUnreadCount(),
       ]);
-      setNotifications(data || []);
+
+      if (data.notifications) {
+        setNotifications(data.notifications);
+      } else {
+        setNotifications(data || []);
+      }
+
       setUnreadCount(unread);
     } catch (error) {
       setToast({ severity: 'error', message: '알림을 불러오는데 실패했습니다.' });

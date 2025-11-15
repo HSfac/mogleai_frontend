@@ -45,4 +45,16 @@ export const authService = {
   isAuthenticated() {
     return !!this.getToken();
   },
+
+  // 비밀번호 재설정 요청
+  async requestPasswordReset(email: string) {
+    const response = await api.post('/auth/password-reset/request', { email });
+    return response.data;
+  },
+
+  // 비밀번호 재설정 확인
+  async resetPassword(email: string, token: string, newPassword: string) {
+    const response = await api.post('/auth/password-reset/confirm', { email, token, newPassword });
+    return response.data;
+  },
 }; 

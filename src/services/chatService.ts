@@ -21,13 +21,13 @@ export const chatService = {
 
   // 메시지 전송
   async sendMessage(chatId: string, content: string) {
-    const response = await api.post(`/chat/${chatId}/message`, { content });
+    const response = await api.post(`/chat/${chatId}/messages`, { content });
     return response.data;
   },
 
   // AI 모델 변경
   async changeAIModel(chatId: string, aiModel: string) {
-    const response = await api.put(`/chat/${chatId}/model`, { aiModel });
+    const response = await api.put(`/chat/${chatId}/ai-model`, { aiModel });
     return response.data;
   },
 

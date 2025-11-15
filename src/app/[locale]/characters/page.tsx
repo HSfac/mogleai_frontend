@@ -145,11 +145,10 @@ export default function CharactersPage() {
       {/* Hero Section */}
       <Box
         sx={{
-          background: '#fff',
+          background: '#0a0a0a',
           pt: { xs: 6, md: 8 },
           pb: { xs: 6, md: 8 },
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderBottom: '1px solid #1a1a1a',
         }}
       >
         <Container maxWidth="lg">
@@ -157,40 +156,30 @@ export default function CharactersPage() {
             variant="h3"
             align="center"
             sx={{
-              fontWeight: 700,
-              color: 'text.primary',
+              fontWeight: 900,
+              color: '#fff',
               mb: 2,
               fontSize: { xs: '2rem', md: '2.5rem' },
             }}
           >
-            완벽한 AI 캐릭터 찾기
+            신작 캐릭터 발견
           </Typography>
           <Typography
             variant="h6"
             align="center"
             sx={{
-              color: 'text.secondary',
+              color: '#999',
               mb: 5,
               maxWidth: 600,
               mx: 'auto',
               fontWeight: 400,
             }}
           >
-            수천 개의 캐릭터 중에서 나에게 꼭 맞는 친구를 만나보세요
+            매일 새로운 AI 캐릭터를 만나보세요
           </Typography>
 
           {/* Search Bar */}
-          <Box
-            sx={{
-              maxWidth: 800,
-              mx: 'auto',
-              bgcolor: '#f8f9fa',
-              borderRadius: 2,
-              p: 2,
-              border: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
+          <Box sx={{ maxWidth: 800, mx: 'auto', bgcolor: '#1a1a1a', borderRadius: 3, p: 2, border: '1px solid #333' }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <TextField
                 fullWidth
@@ -203,24 +192,20 @@ export default function CharactersPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
+                      <SearchIcon sx={{ color: '#666' }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
-                  bgcolor: '#fff',
-                  borderRadius: 1,
                   '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: 'divider',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'text.secondary',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
+                    bgcolor: '#0a0a0a',
+                    borderRadius: 2,
+                    color: '#fff',
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#ff3366' },
+                    '&.Mui-focused fieldset': { borderColor: '#ff3366', borderWidth: 2 },
                   },
+                  '& input::placeholder': { color: '#666' },
                 }}
               />
               <Button
@@ -230,10 +215,9 @@ export default function CharactersPage() {
                 sx={{
                   px: 4,
                   whiteSpace: 'nowrap',
-                  boxShadow: 'none',
-                  '&:hover': {
-                    boxShadow: 'none',
-                  },
+                  bgcolor: '#ff3366',
+                  fontWeight: 700,
+                  '&:hover': { bgcolor: '#e62958' },
                 }}
               >
                 검색
@@ -242,14 +226,7 @@ export default function CharactersPage() {
           </Box>
 
           {/* Tags */}
-          <Stack
-            direction="row"
-            spacing={1.5}
-            flexWrap="wrap"
-            justifyContent="center"
-            mt={4}
-            sx={{ gap: 1 }}
-          >
+          <Stack direction="row" spacing={1.5} flexWrap="wrap" justifyContent="center" mt={4} sx={{ gap: 1 }}>
             {selectedTags.length > 0
               ? selectedTags.map((tag) => (
                   <Chip
@@ -257,12 +234,10 @@ export default function CharactersPage() {
                     label={`#${tag}`}
                     onClick={() => handleTagClick(tag)}
                     sx={{
-                      bgcolor: 'primary.main',
+                      bgcolor: '#ff3366',
                       color: '#fff',
                       fontWeight: 600,
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
-                      },
+                      '&:hover': { bgcolor: '#e62958' },
                     }}
                   />
                 ))
@@ -271,15 +246,12 @@ export default function CharactersPage() {
                     key={tag}
                     label={tag}
                     onClick={() => handleTagClick(tag)}
-                    variant="outlined"
                     sx={{
-                      borderColor: 'divider',
-                      color: 'text.secondary',
+                      bgcolor: '#1a1a1a',
+                      color: '#999',
+                      border: '1px solid #333',
                       fontWeight: 500,
-                      '&:hover': {
-                        borderColor: 'text.secondary',
-                        bgcolor: '#f8f9fa',
-                      },
+                      '&:hover': { borderColor: '#ff3366', color: '#fff', bgcolor: '#2a2a2a' },
                     }}
                   />
                 ))}
@@ -287,144 +259,140 @@ export default function CharactersPage() {
         </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-
-        {/* Tabs */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-          <Tabs
-            value={tabValue}
-            onChange={(_, value) => setTabValue(value)}
-            sx={{
-              '& .MuiTab-root': {
-                fontSize: '1rem',
-                fontWeight: 600,
-                textTransform: 'none',
-                minWidth: 120,
-              },
-            }}
-          >
-            <Tab label="추천 순" value="recommend" />
-            <Tab label="인기 순" value="popular" />
-          </Tabs>
-        </Box>
-
-        {loading ? (
-          <Box display="flex" justifyContent="center" py={8}>
-            <CircularProgress />
+      <Box sx={{ bgcolor: '#0a0a0a', minHeight: '100vh', py: 6 }}>
+        <Container maxWidth="lg">
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: '#1a1a1a', mb: 4 }}>
+            <Tabs
+              value={tabValue}
+              onChange={(_, value) => setTabValue(value)}
+              sx={{
+                '& .MuiTab-root': {
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  minWidth: 120,
+                  color: '#666',
+                },
+                '& .Mui-selected': { color: '#fff' },
+                '& .MuiTabs-indicator': { bgcolor: '#ff3366', height: 3 },
+              }}
+            >
+              <Tab label="추천 순" value="recommend" />
+              <Tab label="인기 순" value="popular" />
+            </Tabs>
           </Box>
-        ) : (
-          <Grid container spacing={3}>
-            {displayedCharacters.map((character) => (
-              <Grid item xs={12} sm={6} md={4} key={character._id}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    borderRadius: 1,
-                    border: 'none',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s',
-                    '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box
-                      display="flex"
-                      alignItems="flex-start"
-                      justifyContent="space-between"
-                      mb={2}
-                    >
-                      <Typography variant="h6" fontWeight={700}>
-                        {character.name}
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleFavoriteToggle(character._id);
+
+          {loading ? (
+            <Box display="flex" justifyContent="center" py={8}>
+              <CircularProgress sx={{ color: '#ff3366' }} />
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {displayedCharacters.map((character) => (
+                <Grid item xs={12} sm={6} md={4} key={character._id}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      bgcolor: '#1a1a1a',
+                      borderRadius: 3,
+                      border: '1px solid #2a2a2a',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        transform: 'translateY(-8px)',
+                        borderColor: '#ff3366',
+                        boxShadow: '0 12px 32px rgba(255, 51, 102, 0.2)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={2}>
+                        <Typography variant="h6" fontWeight={700} color="#fff">
+                          {character.name}
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFavoriteToggle(character._id);
+                          }}
+                        >
+                          <FavoriteIcon
+                            fontSize="small"
+                            sx={{ color: favorites.includes(character._id) ? '#ff3366' : '#666' }}
+                          />
+                        </IconButton>
+                      </Box>
+
+                      <Typography
+                        variant="body2"
+                        color="#999"
+                        sx={{
+                          mb: 2,
+                          height: 40,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
                         }}
                       >
-                        <FavoriteIcon
-                          fontSize="small"
-                          sx={{
-                            color: favorites.includes(character._id)
-                              ? '#f5576c'
-                              : '#e0e0e0',
-                          }}
-                        />
-                      </IconButton>
-                    </Box>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mb: 2,
-                        height: 40,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                      }}
-                    >
-                      {character.description || '설명이 없습니다.'}
-                    </Typography>
-
-                    <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
-                      {character.tags?.slice(0, 3).map((tag) => (
-                        <Chip
-                          key={tag}
-                          label={tag}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                            color: 'primary.main',
-                            fontWeight: 500,
-                            border: 'none',
-                          }}
-                        />
-                      ))}
-                    </Stack>
-
-                    <Box
-                      sx={{
-                        pt: 2,
-                        borderTop: '1px solid',
-                        borderColor: 'divider',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <Typography variant="caption" color="text.secondary" fontWeight={500}>
-                        by {character.creator?.username || '크리에이터'}
+                        {character.description || '설명이 없습니다.'}
                       </Typography>
-                      <Stack direction="row" spacing={2}>
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <FavoriteIcon sx={{ fontSize: 16, color: '#f5576c' }} />
-                          <Typography variant="body2" fontWeight={600}>
-                            {character.likes}
-                          </Typography>
-                        </Stack>
-                        <Stack direction="row" alignItems="center" spacing={0.5}>
-                          <ChatBubbleOutlineIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-                          <Typography variant="body2" fontWeight={600}>
-                            {character.usageCount}
-                          </Typography>
-                        </Stack>
+
+                      <Stack direction="row" spacing={1} flexWrap="wrap" mb={2} sx={{ gap: 1 }}>
+                        {character.tags?.slice(0, 3).map((tag) => (
+                          <Chip
+                            key={tag}
+                            label={tag}
+                            size="small"
+                            sx={{
+                              bgcolor: '#2a2a2a',
+                              color: '#ff3366',
+                              fontWeight: 600,
+                              border: 'none',
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                        ))}
                       </Stack>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </Container>
+
+                      <Box
+                        sx={{
+                          pt: 2,
+                          borderTop: '1px solid #2a2a2a',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <Typography variant="caption" color="#666" fontWeight={600}>
+                          by {character.creator?.username || '크리에이터'}
+                        </Typography>
+                        <Stack direction="row" spacing={2}>
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <FavoriteIcon sx={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" fontWeight={700} color="#999">
+                              {character.likes}
+                            </Typography>
+                          </Stack>
+                          <Stack direction="row" alignItems="center" spacing={0.5}>
+                            <ChatBubbleOutlineIcon sx={{ fontSize: 16, color: '#666' }} />
+                            <Typography variant="body2" fontWeight={700} color="#999">
+                              {character.usageCount}
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Container>
+      </Box>
     </PageLayout>
   );
 }

@@ -4,7 +4,7 @@ import { Box } from '@mui/material';
 import MobileNavBar from './MobileNavBar';
 import MobileHeader from './MobileHeader';
 import Sidebar from './Sidebar';
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -12,6 +12,8 @@ interface PageLayoutProps {
 }
 
 export default function PageLayout({ children, showHeader = true }: PageLayoutProps) {
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+
   return (
     <Box
       sx={{
@@ -20,16 +22,17 @@ export default function PageLayout({ children, showHeader = true }: PageLayoutPr
         display: 'flex',
       }}
     >
-      {showHeader && <Sidebar />}
+      {showHeader && <Sidebar onWidthChange={setSidebarWidth} />}
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
           width: '100%',
-          ml: showHeader ? { xs: 0, md: '240px' } : 0,
+          ml: showHeader ? { xs: 0, md: `${sidebarWidth}px` } : 0,
           minHeight: '100vh',
           pb: showHeader ? { xs: 10, md: 0 } : 0,
+          transition: 'margin-left 0.3s ease',
         }}
       >
         {showHeader && <MobileHeader />}

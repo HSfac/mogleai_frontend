@@ -24,17 +24,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
 import GoogleIcon from '@mui/icons-material/Google';
-import AppleIcon from '@mui/icons-material/Apple';
-import FacebookIcon from '@mui/icons-material/Facebook';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HomeIcon from '@mui/icons-material/Home';
 import { useAuth } from '@/contexts/AuthContext';
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
-  { name: 'apple', icon: <AppleIcon />, color: '#000' },
-  { name: 'facebook', icon: <FacebookIcon />, color: '#4267B2' },
+  { name: 'kakao', icon: <ChatBubbleIcon />, color: '#FEE500' },
 ];
 
 const initialForm = {
@@ -92,7 +91,14 @@ export default function RegisterPage() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    setError(`${provider} 로그인은 현재 준비 중입니다.`);
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    if (provider === 'google') {
+      window.location.href = `${backendUrl}/auth/google`;
+    } else if (provider === 'kakao') {
+      window.location.href = `${backendUrl}/auth/kakao`;
+    } else {
+      setError(`${provider} 로그인은 현재 준비 중입니다.`);
+    }
   };
 
   const handleCloseError = () => setError('');
@@ -100,99 +106,59 @@ export default function RegisterPage() {
 
   return (
     <PageLayout showHeader={false}>
-      <Box
-        sx={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16162e 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          py: { xs: 4, md: 6 },
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
+      <Box sx={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', position: 'relative' }}>
+        {/* Navigation Button */}
+        <Box
+          sx={{
             position: 'absolute',
-            top: '-50%',
-            right: '-10%',
-            width: '50%',
-            height: '100%',
-            background: 'radial-gradient(circle, rgba(255,51,102,0.08) 0%, transparent 70%)',
-            borderRadius: '50%',
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: '-30%',
-            left: '-10%',
-            width: '40%',
-            height: '80%',
-            background: 'radial-gradient(circle, rgba(102,126,234,0.06) 0%, transparent 70%)',
-            borderRadius: '50%',
-          },
-        }}
-      >
-        <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ textAlign: 'center', mb: 5 }}>
-            {/* Logo */}
-            <Box
+            top: { xs: 20, md: 32 },
+            left: { xs: 20, md: 32 },
+            zIndex: 10,
+          }}
+        >
+          <Link href="/" passHref style={{ textDecoration: 'none' }}>
+            <Button
+              variant="outlined"
+              startIcon={<HomeIcon />}
               sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 2,
-                mb: 4,
+                borderColor: '#333',
+                color: '#fff',
+                bgcolor: 'rgba(26, 26, 26, 0.8)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 2,
+                px: 2.5,
+                py: 1,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  borderColor: '#ff3366',
+                  bgcolor: 'rgba(255, 51, 102, 0.1)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(255, 51, 102, 0.2)',
+                },
               }}
             >
-              <Box
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 1,
-                  background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 800,
-                  fontSize: '1.75rem',
-                  color: '#fff',
-                  boxShadow: '0 8px 32px rgba(255,51,102,0.3)',
-                }}
-              >
-                몽
-              </Box>
-              <Typography variant="h4" fontWeight={800} sx={{ color: '#fff', letterSpacing: -1 }}>
-                몽글AI
+              홈으로
+            </Button>
+          </Link>
+        </Box>
+
+        {/* Left Side - Form */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 4, md: 6 }, pt: { xs: 10, md: 6 } }}>
+          <Container maxWidth="sm">
+          <Box sx={{ maxWidth: 480, width: '100%' }}>
+            <Box sx={{ mb: 6 }}>
+              <Typography variant="h3" fontWeight={900} sx={{ color: '#fff', mb: 2 }}>
+                회원가입
+              </Typography>
+              <Typography variant="body1" sx={{ color: '#999' }}>
+                몽글AI에서 특별한 경험을 시작하세요
               </Typography>
             </Box>
-            <Typography variant="h4" fontWeight={700} sx={{ color: '#fff', mb: 1.5 }}>
-              새로운 시작 ✨
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#b0b0c8', fontSize: '1.05rem' }}>
-              몽글AI와 함께 특별한 경험을 시작하세요
-            </Typography>
-          </Box>
 
-          <Paper
-            elevation={0}
-            sx={{
-              borderRadius: 1,
-              background: 'rgba(30, 30, 46, 0.8)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              p: { xs: 4, sm: 5 },
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
-            }}
-          >
-
-            <Box
-              component="form"
-              onSubmit={handleSubmit}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2.5,
-              }}
-            >
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               <TextField
                 label="사용자 이름"
                 name="username"
@@ -201,24 +167,16 @@ export default function RegisterPage() {
                 fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#ff3366',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff3366',
-                      borderWidth: 2,
-                    },
+                    bgcolor: '#1a1a1a',
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#ff3366' },
+                    '&.Mui-focused fieldset': { borderColor: '#ff3366', borderWidth: 2 },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#ff3366',
-                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#ff3366' },
                 }}
               />
+
               <TextField
                 label="이메일"
                 name="email"
@@ -227,24 +185,16 @@ export default function RegisterPage() {
                 fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#ff3366',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff3366',
-                      borderWidth: 2,
-                    },
+                    bgcolor: '#1a1a1a',
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#ff3366' },
+                    '&.Mui-focused fieldset': { borderColor: '#ff3366', borderWidth: 2 },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#ff3366',
-                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#ff3366' },
                 }}
               />
+
               <TextField
                 label="비밀번호"
                 name="password"
@@ -255,11 +205,7 @@ export default function RegisterPage() {
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        sx={{ color: '#b0b0c8' }}
-                      >
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#999' }}>
                         {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                       </IconButton>
                     </InputAdornment>
@@ -267,24 +213,16 @@ export default function RegisterPage() {
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#ff3366',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff3366',
-                      borderWidth: 2,
-                    },
+                    bgcolor: '#1a1a1a',
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#ff3366' },
+                    '&.Mui-focused fieldset': { borderColor: '#ff3366', borderWidth: 2 },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#ff3366',
-                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#ff3366' },
                 }}
               />
+
               <TextField
                 label="비밀번호 확인"
                 name="confirmPassword"
@@ -294,22 +232,13 @@ export default function RegisterPage() {
                 fullWidth
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: '#ff3366',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#ff3366',
-                      borderWidth: 2,
-                    },
+                    bgcolor: '#1a1a1a',
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: '#333' },
+                    '&:hover fieldset': { borderColor: '#ff3366' },
+                    '&.Mui-focused fieldset': { borderColor: '#ff3366', borderWidth: 2 },
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#ff3366',
-                  },
+                  '& .MuiInputLabel-root.Mui-focused': { color: '#ff3366' },
                 }}
               />
 
@@ -318,28 +247,21 @@ export default function RegisterPage() {
                   <Checkbox
                     checked={agreeTerms}
                     onChange={(e) => setAgreeTerms(e.target.checked)}
-                    sx={{
-                      color: 'rgba(255, 255, 255, 0.3)',
-                      '&.Mui-checked': {
-                        color: '#ff3366',
-                      },
-                    }}
+                    sx={{ color: '#666', '&.Mui-checked': { color: '#ff3366' } }}
                   />
                 }
                 label={
-                  <Typography variant="body2" sx={{ color: '#b0b0c8' }}>
+                  <Typography variant="body2" sx={{ color: '#999' }}>
                     <Link href="/terms" passHref>
-                      <MuiLink sx={{ color: '#ff3366', fontWeight: 500, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                      <MuiLink sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                         이용약관
                       </MuiLink>
-                    </Link>{' '}
-                    및{' '}
+                    </Link>{' '}및{' '}
                     <Link href="/privacy" passHref>
-                      <MuiLink sx={{ color: '#ff3366', fontWeight: 500, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                        개인정보 처리방침
+                      <MuiLink sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                        개인정보처리방침
                       </MuiLink>
-                    </Link>
-                    에 동의합니다.
+                    </Link>에 동의합니다.
                   </Typography>
                 }
               />
@@ -350,82 +272,114 @@ export default function RegisterPage() {
                 size="large"
                 disabled={isLoading}
                 sx={{
-                  background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
+                  bgcolor: '#ff3366',
                   py: 1.8,
-                  borderRadius: 1,
-                  fontSize: '1.05rem',
+                  borderRadius: 2,
+                  fontSize: '1.1rem',
                   fontWeight: 700,
-                  textTransform: 'none',
-                  boxShadow: '0 8px 24px rgba(255,51,102,0.3)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #e62958 0%, #ff5588 100%)',
-                    boxShadow: '0 12px 32px rgba(255,51,102,0.4)',
-                    transform: 'translateY(-2px)',
-                  },
-                  '&.Mui-disabled': {
-                    background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
-                    opacity: 0.6,
-                    color: '#fff',
-                  },
-                  transition: 'all 0.3s',
+                  '&:hover': { bgcolor: '#e62958' },
+                  '&.Mui-disabled': { bgcolor: '#ff3366', opacity: 0.6 },
                 }}
               >
                 {isLoading ? <CircularProgress size={24} color="inherit" /> : '회원가입'}
               </Button>
 
-              <Divider sx={{ my: 1, '&::before, &::after': { borderColor: 'rgba(255, 255, 255, 0.1)' } }}>
-                <Typography variant="body2" sx={{ color: '#b0b0c8' }}>
-                  또는
-                </Typography>
+              <Divider sx={{ '&::before, &::after': { borderColor: '#333' } }}>
+                <Typography variant="body2" sx={{ color: '#666' }}>또는</Typography>
               </Divider>
 
-              <Stack direction="row" spacing={2} justifyContent="center">
-                {socialPlatforms.map((platform) => (
-                  <IconButton
-                    key={platform.name}
-                    onClick={() => handleSocialLogin(platform.name)}
-                    sx={{
-                      width: 60,
-                      height: 60,
-                      border: '2px solid rgba(255, 255, 255, 0.1)',
-                      bgcolor: 'rgba(255, 255, 255, 0.03)',
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        borderColor: '#ff3366',
-                        bgcolor: 'rgba(255, 51, 102, 0.1)',
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 12px 32px rgba(255,51,102,0.2)',
-                      },
-                    }}
-                  >
-                    <Box sx={{ color: platform.color, fontSize: 26 }}>{platform.icon}</Box>
-                  </IconButton>
-                ))}
+              <Stack spacing={2}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="large"
+                  onClick={() => handleSocialLogin('google')}
+                  startIcon={<GoogleIcon />}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 2,
+                    borderColor: '#333',
+                    bgcolor: '#fff',
+                    color: '#333',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                      borderColor: '#DB4437',
+                      bgcolor: '#fff',
+                      '& .MuiButton-startIcon': {
+                        color: '#DB4437',
+                      }
+                    },
+                  }}
+                >
+                  Google로 계속하기
+                </Button>
+
+                <Button
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  onClick={() => handleSocialLogin('kakao')}
+                  startIcon={<ChatBubbleIcon />}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 2,
+                    bgcolor: '#FEE500',
+                    color: '#000',
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                      bgcolor: '#FDD835',
+                    },
+                  }}
+                >
+                  카카오로 계속하기
+                </Button>
               </Stack>
 
-              <Typography
-                variant="body1"
-                sx={{ textAlign: 'center', mt: 2, color: '#b0b0c8' }}
-              >
+              <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 이미 계정이 있으신가요?{' '}
                 <Link href="/login" passHref>
-                  <MuiLink
-                    sx={{
-                      color: '#ff3366',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      '&:hover': {
-                        textDecoration: 'underline',
-                      },
-                    }}
-                  >
+                  <MuiLink sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                     로그인하기
                   </MuiLink>
                 </Link>
               </Typography>
             </Box>
-          </Paper>
-        </Container>
+          </Box>
+          </Container>
+        </Box>
+
+        {/* Right Side - Mascot Image */}
+        <Box
+          sx={{
+            flex: 1,
+            display: { xs: 'none', md: 'flex' },
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: '#0f0f0f',
+            borderLeft: '1px solid #1a1a1a',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%)',
+            }}
+          >
+            <Box sx={{ fontSize: '15rem', opacity: 0.3, filter: 'blur(2px)' }}>
+              ✨
+            </Box>
+          </Box>
+        </Box>
       </Box>
 
       <Snackbar open={!!error} autoHideDuration={6000} onClose={handleCloseError} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, Divider, Badge, Typography, Stack } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, Divider, Badge, Typography, Stack, IconButton } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
@@ -8,15 +8,27 @@ import ChatIcon from '@mui/icons-material/Chat';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TokenIcon from '@mui/icons-material/Token';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
+import { useState, useEffect } from 'react';
 
-export default function Sidebar() {
+interface SidebarProps {
+  onWidthChange?: (width: number) => void;
+}
+
+export default function Sidebar({ onWidthChange }: SidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuth();
   const t = useTranslations();
+
+  useEffect(() => {
+    onWidthChange?.(isCollapsed ? 70 : 240);
+  }, [isCollapsed, onWidthChange]);
 
   // Extract locale from pathname
   const locale = pathname.split('/')[1] || 'ko';
@@ -33,7 +45,7 @@ export default function Sidebar() {
   return (
     <Box
       sx={{
-        width: 240,
+        width: isCollapsed ? 70 : 240,
         height: '100vh',
         position: 'fixed',
         left: 0,
@@ -43,6 +55,7 @@ export default function Sidebar() {
         display: { xs: 'none', md: 'flex' },
         flexDirection: 'column',
         zIndex: 1000,
+        transition: 'width 0.3s ease',
       }}
     >
       {/* Logo */}
@@ -54,32 +67,67 @@ export default function Sidebar() {
           gap: 1.5,
           cursor: 'pointer',
           borderBottom: '1px solid #2a2a2a',
+          justifyContent: isCollapsed ? 'center' : 'space-between',
         }}
-        onClick={() => router.push(getLocalePath('/'))}
       >
         <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: 2,
-            background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '1.2rem',
-            color: '#fff',
-          }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+          onClick={() => router.push(getLocalePath('/'))}
         >
-          몽
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: '1.2rem',
+              color: '#fff',
+            }}
+          >
+            몽
+          </Box>
+          {!isCollapsed && (
+            <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
+              {t('common.appName')}
+            </Typography>
+          )}
         </Box>
-        <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
-          {t('common.appName')}
-        </Typography>
+        {!isCollapsed && (
+          <IconButton
+            onClick={() => setIsCollapsed(true)}
+            sx={{ color: '#999', '&:hover': { color: '#fff' } }}
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+        )}
       </Box>
 
       {/* Menu Items */}
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
+        {isCollapsed && (
+          <ListItem disablePadding sx={{ mb: 2 }}>
+            <ListItemButton
+              onClick={() => setIsCollapsed(false)}
+              sx={{
+                borderRadius: 2,
+                py: 1.2,
+                justifyContent: 'center',
+                color: '#999',
+                '&:hover': {
+                  bgcolor: '#2a2a2a',
+                  color: '#fff',
+                },
+              }}
+            >
+              <MenuIcon />
+            </ListItemButton>
+          </ListItem>
+        )}
+
         {menuItems.map((item) => {
           const itemPath = getLocalePath(item.path);
           const isActive = pathname === itemPath;
@@ -90,7 +138,8 @@ export default function Sidebar() {
                 sx={{
                   borderRadius: 2,
                   py: 1.2,
-                  px: 2,
+                  px: isCollapsed ? 1 : 2,
+                  justifyContent: isCollapsed ? 'center' : 'flex-start',
                   bgcolor: isActive ? '#ff3366' : 'transparent',
                   color: isActive ? '#fff' : '#999',
                   '&:hover': {
@@ -100,7 +149,7 @@ export default function Sidebar() {
                   transition: 'all 0.2s',
                 }}
               >
-                <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+                <ListItemIcon sx={{ color: 'inherit', minWidth: isCollapsed ? 0 : 36 }}>
                   {item.badge ? (
                     <Badge
                       badgeContent={item.badge}
@@ -117,13 +166,15 @@ export default function Sidebar() {
                     item.icon
                   )}
                 </ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontWeight: isActive ? 700 : 500,
-                    fontSize: '0.95rem',
-                  }}
-                />
+                {!isCollapsed && (
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: isActive ? 700 : 500,
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                )}
               </ListItemButton>
             </ListItem>
           );
@@ -138,7 +189,8 @@ export default function Sidebar() {
             sx={{
               borderRadius: 2,
               py: 1.5,
-              px: 2,
+              px: isCollapsed ? 1 : 2,
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
               bgcolor: '#ff3366',
               color: '#fff',
               fontWeight: 700,
@@ -148,16 +200,18 @@ export default function Sidebar() {
               transition: 'all 0.2s',
             }}
           >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+            <ListItemIcon sx={{ color: 'inherit', minWidth: isCollapsed ? 0 : 36 }}>
               <AddCircleIcon />
             </ListItemIcon>
-            <ListItemText
-              primary={t('nav.create_character')}
-              primaryTypographyProps={{
-                fontWeight: 700,
-                fontSize: '0.95rem',
-              }}
-            />
+            {!isCollapsed && (
+              <ListItemText
+                primary={t('nav.create_character')}
+                primaryTypographyProps={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                }}
+              />
+            )}
           </ListItemButton>
         </ListItem>
       </List>
@@ -170,10 +224,11 @@ export default function Sidebar() {
               display: 'flex',
               alignItems: 'center',
               gap: 1.5,
-              p: 1.5,
+              p: isCollapsed ? 1 : 1.5,
               borderRadius: 2,
               bgcolor: '#2a2a2a',
               cursor: 'pointer',
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
               '&:hover': {
                 bgcolor: '#333',
               },
@@ -192,14 +247,16 @@ export default function Sidebar() {
             >
               {user?.username?.[0]?.toUpperCase() || 'U'}
             </Avatar>
-            <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-              <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#fff' }}>
-                {user?.username || t('common.username')}
-              </Typography>
-              <Typography variant="caption" sx={{ color: '#999' }}>
-                {t('common.profile')}
-              </Typography>
-            </Box>
+            {!isCollapsed && (
+              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#fff' }}>
+                  {user?.username || t('common.username')}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#999' }}>
+                  {t('common.profile')}
+                </Typography>
+              </Box>
+            )}
           </Box>
         ) : (
           <Stack spacing={1}>
@@ -217,25 +274,28 @@ export default function Sidebar() {
                 },
               }}
             >
-              {t('common.login')}
+              {!isCollapsed && t('common.login')}
+              {isCollapsed && 'L'}
             </ListItemButton>
-            <ListItemButton
-              onClick={() => router.push(getLocalePath('/register'))}
-              sx={{
-                borderRadius: 2,
-                bgcolor: 'transparent',
-                border: '1px solid #ff3366',
-                color: '#ff3366',
-                fontWeight: 700,
-                justifyContent: 'center',
-                py: 1.2,
-                '&:hover': {
-                  bgcolor: '#2a2a2a',
-                },
-              }}
-            >
-              {t('common.register')}
-            </ListItemButton>
+            {!isCollapsed && (
+              <ListItemButton
+                onClick={() => router.push(getLocalePath('/register'))}
+                sx={{
+                  borderRadius: 2,
+                  bgcolor: 'transparent',
+                  border: '1px solid #ff3366',
+                  color: '#ff3366',
+                  fontWeight: 700,
+                  justifyContent: 'center',
+                  py: 1.2,
+                  '&:hover': {
+                    bgcolor: '#2a2a2a',
+                  },
+                }}
+              >
+                {t('common.register')}
+              </ListItemButton>
+            )}
           </Stack>
         )}
       </Box>
