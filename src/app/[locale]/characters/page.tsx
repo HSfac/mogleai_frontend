@@ -26,7 +26,7 @@ import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AddIcon from '@mui/icons-material/Add';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchCharacters } from '@/services/characterService';
+import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
 
 interface Character {
@@ -66,7 +66,7 @@ export default function CharactersPage() {
   const loadCharacters = async () => {
     setLoading(true);
     try {
-      const data = await fetchCharacters();
+      const data = await characterService.getCharacters();
       setCharacters(data);
     } catch (error) {
       console.error('캐릭터 목록을 불러오는데 실패했습니다:', error);

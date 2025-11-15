@@ -32,7 +32,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PreviewIcon from '@mui/icons-material/Preview';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchCharacterById } from '@/services/characterService';
+import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
 
 export default function EditCharacterPage({ params }: { params: { id: string } }) {
@@ -81,7 +81,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
     const fetchCharacter = async () => {
       try {
         setLoading(true);
-        const character = await fetchCharacterById(params.id);
+        const character = await characterService.getCharacter(params.id);
 
         // 본인이 만든 캐릭터인지 확인
         if (character.creator._id !== user?._id) {

@@ -36,7 +36,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fetchCharacterById } from '@/services/characterService';
+import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
 
 export default function CharacterDetailPage({ params }) {
@@ -54,7 +54,7 @@ export default function CharacterDetailPage({ params }) {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const characterData = await fetchCharacterById(params.id);
+        const characterData = await characterService.getCharacter(params.id);
         setCharacter(characterData);
 
         // Check if user has liked this character

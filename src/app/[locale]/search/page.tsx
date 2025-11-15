@@ -26,7 +26,7 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import PageLayout from '@/components/PageLayout';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchCharacters, fetchPopularCharacters } from '@/services/characterService';
+import { characterService } from '@/services/character.service';
 import { Character } from '@/types/character';
 
 const popularSearches = ['연애', '직장', '상담', '판타지', '게임', '학교'];
@@ -50,7 +50,7 @@ export default function SearchPage() {
   const loadCharacters = async () => {
     try {
       setIsLoading(true);
-      const data = await fetchCharacters();
+      const data = await characterService.getCharacters();
       setCharacters(data);
     } catch (error) {
       console.error('캐릭터 로드 실패:', error);
@@ -82,7 +82,7 @@ export default function SearchPage() {
 
     try {
       setIsLoading(true);
-      const data = await fetchCharacters(term);
+      const data = await characterService.getCharacters(term);
       setCharacters(data);
     } catch (error) {
       console.error('검색 실패:', error);
@@ -96,10 +96,10 @@ export default function SearchPage() {
     try {
       setIsLoading(true);
       if (value === 1) {
-        const data = await fetchPopularCharacters();
+        const data = await characterService.getPopularCharacters();
         setCharacters(data);
       } else {
-        const data = await fetchCharacters();
+        const data = await characterService.getCharacters();
         setCharacters(data);
       }
     } catch (error) {

@@ -75,21 +75,15 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
           onClick={() => router.push(getLocalePath('/'))}
         >
           <Box
+            component="img"
+            src="/icon.png"
+            alt="몽글챗 로고"
             sx={{
               width: 36,
               height: 36,
               borderRadius: 2,
-              background: 'linear-gradient(135deg, #ff3366 0%, #ff6699 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 800,
-              fontSize: '1.2rem',
-              color: '#fff',
             }}
-          >
-            몽
-          </Box>
+          />
           {!isCollapsed && (
             <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
               {t('common.appName')}

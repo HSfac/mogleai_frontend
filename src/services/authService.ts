@@ -57,4 +57,29 @@ export const authService = {
     const response = await api.post('/auth/password-reset/confirm', { email, token, newPassword });
     return response.data;
   },
+
+  // 소셜 로그인 - 구글
+  loginWithGoogle() {
+    if (typeof window !== 'undefined') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      window.location.href = `${apiUrl}/auth/google`;
+    }
+  },
+
+  // 소셜 로그인 - 카카오
+  loginWithKakao() {
+    if (typeof window !== 'undefined') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      window.location.href = `${apiUrl}/auth/kakao`;
+    }
+  },
+
+  // 소셜 로그인 콜백 처리
+  async handleSocialCallback(accessToken: string) {
+    if (accessToken) {
+      localStorage.setItem('token', accessToken);
+      return { success: true };
+    }
+    return { success: false };
+  },
 }; 
