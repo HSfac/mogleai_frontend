@@ -32,6 +32,7 @@ interface Character {
   description?: string;
   imageUrl?: string;
   tags?: string[];
+  defaultAIModel?: string;
 }
 
 interface RecentChat {
@@ -127,8 +128,13 @@ export default function ChatPage() {
     }
   };
 
-  const handleStartChat = (characterId: string) => {
-    router.push(`/chat/new?character=${characterId}`);
+  const handleStartChat = async (character: Character) => {
+    try {
+      const chat = await chatService.createChat(character._id, character.defaultAIModel || 'gpt4');
+      router.push(`/chat/${chat._id}`);
+    } catch (startError) {
+      console.error('채팅을 시작하지 못했습니다:', startError);
+    }
   };
 
   return (
@@ -157,7 +163,7 @@ export default function ChatPage() {
               startIcon={<SendIcon />}
               size="large"
               sx={{ borderRadius: 999 }}
-              onClick={() => router.push('/chat/create')}
+              onClick={() => router.push('/characters')}
             >
               새로운 챗 시작
             </Button>
@@ -303,7 +309,7 @@ export default function ChatPage() {
                       color="secondary"
                       startIcon={<SendIcon />}
                       sx={{ mt: 1, borderRadius: 999 }}
-                      onClick={() => handleStartChat(character._id)}
+                      onClick={() => handleStartChat(character)}
                     >
                       대화하기
                     </Button>

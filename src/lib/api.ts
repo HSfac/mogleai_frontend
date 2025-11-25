@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
+  // 기본값은 백엔드 개발 포트(5001). 배포/로컬 변경은 NEXT_PUBLIC_API_URL 환경변수로 조정.
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
   headers: {
     'Content-Type': 'application/json',
   },

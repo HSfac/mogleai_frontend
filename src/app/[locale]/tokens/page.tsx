@@ -102,12 +102,24 @@ export default function TokensPage() {
     setPaymentLoading(true);
 
     try {
-      const paymentData = await paymentService.buyTokens(pkg.id);
+      const paymentData = await paymentService.buyTokens(pkg.price, pkg.tokens);
+      // 백엔드가 생성한 결제 페이지 URL이 있으면 바로 이동
+      if (paymentData?.paymentUrl) {
+        window.location.href = paymentData.paymentUrl;
+        return;
+      }
+
+      // fallback: Toss JS SDK로 직접 결제 요청
       if (!tossPayments.current) throw new Error('결제 시스템 초기화 실패');
+
+      const orderId =
+        paymentData?.payment?.paymentId ||
+        paymentData?.orderId ||
+        `token_${Date.now()}`;
 
       await tossPayments.current.requestPayment('카드', {
         amount: pkg.price,
-        orderId: paymentData.orderId,
+        orderId,
         orderName: pkg.name,
         customerName: user?.username || '사용자',
         successUrl: `${window.location.origin}/payment/success`,
@@ -126,11 +138,11 @@ export default function TokensPage() {
     setDialogOpen(false);
     setPaymentLoading(true);
     try {
-      const customerKey = user?._id || '';
-      await paymentService.issueBillingKey(customerKey);
       if (!tossPayments.current) throw new Error('결제 시스템 초기화 실패');
+      const customerKey = user?._id || '';
       await tossPayments.current.requestBillingAuth('카드', {
         customerKey,
+        // authKey가 이 URL로 전달되며, 성공 페이지에서 백엔드로 전달해 빌링키를 발급함
         successUrl: `${window.location.origin}/payment/subscription-success`,
         failUrl: `${window.location.origin}/payment/fail`,
       });

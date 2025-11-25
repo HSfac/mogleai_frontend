@@ -38,6 +38,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
+import { chatService } from '@/services/chatService';
 
 export default function CharacterDetailPage({ params }) {
   const router = useRouter();
@@ -97,13 +98,20 @@ export default function CharacterDetailPage({ params }) {
     }
   };
 
-  const handleStartChat = () => {
+  const handleStartChat = async () => {
     if (!isAuthenticated) {
       router.push('/login');
       return;
     }
 
-    router.push(`/chat/${params.id}`);
+    try {
+      const aiModel = character?.defaultAIModel || 'gpt4';
+      const newChat = await chatService.createChat(params.id, aiModel);
+      router.push(`/chat/${newChat._id}`);
+    } catch (startError) {
+      console.error('채팅 생성 중 오류:', startError);
+      setError('채팅을 시작할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    }
   };
 
   const handleEdit = () => {

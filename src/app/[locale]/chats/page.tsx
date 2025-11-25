@@ -24,79 +24,70 @@ import PageLayout from '@/components/PageLayout';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
+import { chatService } from '@/services/chatService';
+import { characterService } from '@/services/character.service';
 
-// 더미 데이터 (백엔드 구현 전까지 사용)
-const dummyChats = [
-  {
-    id: '1',
-    characterId: '101',
-    characterName: '비비',
-    characterImage: '/images/characters/bibi.jpg',
-    lastMessage: '안녕하세요! 오늘 기분이 어떠세요?',
-    lastMessageTime: new Date(2023, 5, 15, 14, 30),
-    unreadCount: 2
-  },
-  {
-    id: '2',
-    characterId: '102',
-    characterName: '일진 윤아',
-    characterImage: '/images/characters/yoona.jpg',
-    lastMessage: '야, 너 내일 학교 오지마.',
-    lastMessageTime: new Date(2023, 5, 14, 18, 45),
-    unreadCount: 0
-  },
-  {
-    id: '3',
-    characterId: '103',
-    characterName: '은서 22',
-    characterImage: '/images/characters/eunseo.jpg',
-    lastMessage: '오늘 수업 너무 힘들었어요...',
-    lastMessageTime: new Date(2023, 5, 13, 21, 10),
-    unreadCount: 0
-  },
-  {
-    id: '4',
-    characterId: '104',
-    characterName: '철학자 소크라테스',
-    characterImage: '/images/characters/socrates.jpg',
-    lastMessage: '너 자신을 알라.',
-    lastMessageTime: new Date(2023, 5, 12, 9, 20),
-    unreadCount: 0
-  },
-  {
-    id: '5',
-    characterId: '105',
-    characterName: '심리 상담사 정우',
-    characterImage: '/images/characters/counselor.jpg',
-    lastMessage: '그런 감정을 느끼는 것은 자연스러운 일이에요.',
-    lastMessageTime: new Date(2023, 5, 10, 16, 5),
-    unreadCount: 0
-  }
-];
+interface ChatListItem {
+  id: string;
+  characterId: string;
+  characterName: string;
+  characterImage?: string;
+  lastMessage: string;
+  lastMessageTime: Date | null;
+  unreadCount: number;
+}
 
 export default function ChatsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const [chats, setChats] = useState([]);
-  const [filteredChats, setFilteredChats] = useState([]);
+  const [chats, setChats] = useState<ChatListItem[]>([]);
+  const [filteredChats, setFilteredChats] = useState<ChatListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // 실제 구현에서는 API 호출로 대체
     const fetchChats = async () => {
       try {
         setIsLoading(true);
-        // 백엔드 구현 시 아래 주석 해제
-        // const response = await api.get('/chat');
-        // setChats(response.data);
-        
-        // 더미 데이터 사용 (백엔드 구현 전)
-        setTimeout(() => {
-          setChats(dummyChats);
-          setFilteredChats(dummyChats);
-          setIsLoading(false);
-        }, 800); // 로딩 효과를 위한 지연
+        const chatResponse = await chatService.getChats();
+
+        const uniqueCharacterIds = Array.from(
+          new Set(
+            (chatResponse || [])
+              .map((chat: any) => chat.character?.toString?.())
+              .filter(Boolean),
+          ),
+        );
+
+        const characterMap = new Map<string, any>();
+        await Promise.all(
+          uniqueCharacterIds.map(async (id) => {
+            try {
+              const data = await characterService.getCharacter(id);
+              characterMap.set(id, data);
+            } catch {
+              // 개별 캐릭터 로드 실패는 무시
+            }
+          }),
+        );
+
+        const normalized = (chatResponse || []).map((chat: any) => {
+          const lastMessage = (chat.messages || [])[chat.messages.length - 1];
+          const character = characterMap.get(chat.character?.toString?.() || '');
+          return {
+            id: chat._id,
+            characterId: chat.character?.toString?.() || '',
+            characterName: character?.name || '알 수 없는 캐릭터',
+            characterImage: character?.imageUrl,
+            lastMessage: lastMessage?.content || '대화 내역이 없습니다.',
+            lastMessageTime: lastMessage?.timestamp ? new Date(lastMessage.timestamp) : chat.lastActivity ? new Date(chat.lastActivity) : null,
+            unreadCount: 0,
+          };
+        });
+
+        setChats(normalized);
+        setFilteredChats(normalized);
+        setIsLoading(false);
       } catch (error) {
         console.error('채팅 목록을 불러오는데 실패했습니다:', error);
         setIsLoading(false);
@@ -125,16 +116,21 @@ export default function ChatsPage() {
     setSearchQuery(e.target.value);
   };
 
-  const handleDeleteChat = (chatId) => {
-    // 실제 구현에서는 API 호출로 대체
-    const updatedChats = chats.filter(chat => chat.id !== chatId);
-    setChats(updatedChats);
-    setFilteredChats(updatedChats.filter(chat => 
-      chat.characterName.toLowerCase().includes(searchQuery.toLowerCase())
-    ));
+  const handleDeleteChat = async (chatId) => {
+    try {
+      await chatService.deleteChat(chatId);
+      const updatedChats = chats.filter(chat => chat.id !== chatId);
+      setChats(updatedChats);
+      setFilteredChats(updatedChats.filter(chat => 
+        chat.characterName.toLowerCase().includes(searchQuery.toLowerCase())
+      ));
+    } catch (deleteError) {
+      console.error('채팅 삭제에 실패했습니다:', deleteError);
+    }
   };
 
   const formatTime = (date) => {
+    if (!date) return '';
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     
@@ -219,7 +215,7 @@ export default function ChatsPage() {
                       bgcolor: 'rgba(0, 0, 0, 0.04)'
                     }
                   }}
-                  onClick={() => router.push(`/chats/${chat.id}`)}
+                  onClick={() => router.push(`/chat/${chat.id}`)}
                   secondaryAction={
                     <IconButton 
                       edge="end" 

@@ -33,6 +33,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import PreviewIcon from '@mui/icons-material/Preview';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 import { characterService } from '@/services/character.service';
 
 export default function CreateCharacterPage() {
