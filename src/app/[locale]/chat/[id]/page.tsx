@@ -64,6 +64,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<{ cancel: () => void } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -92,6 +93,12 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat?.messages]);
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.cancel();
+    };
+  }, []);
 
   const messageStats = useMemo(() => {
     if (!chat) return { user: 0, ai: 0 };
@@ -124,90 +131,43 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         : prev,
     );
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    const apiUrl =
-      process.env.NEXT_PUBLIC_API_URL ||
-      api.defaults.baseURL ||
-      'http://localhost:5001';
-    let aiResponse = '';
+    let fullResponse = '';
 
-    try {
-      const response = await fetch(`${apiUrl}/chat/${id}/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ content: userInput }),
-      });
-
-      if (!response.ok || !response.body) {
-        throw new Error('스트리밍 응답을 받을 수 없습니다.');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const segments = buffer.split('\n\n');
-        buffer = segments.pop() || '';
-
-        segments.forEach((segment) => {
-          const line = segment.trim();
-          if (!line.startsWith('data:')) return;
-          const payloadRaw = line.replace(/^data:\s*/, '');
-          if (!payloadRaw) return;
-          try {
-            const payload = JSON.parse(payloadRaw);
-            if (payload.type === 'chunk') {
-              aiResponse += payload.content || '';
-              setChat((prev) => {
-                if (!prev) return prev;
-                const updated = [...prev.messages];
-                if (updated.length === 0) return prev;
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  content: aiResponse,
-                  timestamp: new Date(),
-                };
-                return { ...prev, messages: updated };
-              });
-            } else if (payload.type === 'done') {
-              setIsSending(false);
-            } else if (payload.type === 'error') {
-              throw new Error(payload.message || '스트리밍 오류');
-            }
-          } catch (streamErr) {
-            console.error('스트림 파싱 오류:', streamErr);
-          }
+    streamRef.current = chatService.streamMessage(id, userInput, {
+      onChunk: (_chunk, fullText) => {
+        fullResponse = fullText;
+        setChat((prev) => {
+          if (!prev) return prev;
+          const updated = [...prev.messages];
+          if (updated.length === 0) return prev;
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: fullResponse,
+            timestamp: new Date(),
+          };
+          return { ...prev, messages: updated };
         });
-      }
-
-      setIsSending(false);
-    } catch (err) {
-      console.error(err);
-      setError('메시지를 전송하는데 실패했습니다.');
-      setIsSending(false);
-      // 실패 시 직전으로 롤백
-      setChat((prev) => {
-        if (!prev) return prev;
-        const updated = [...prev.messages];
-        // 마지막 AI 버블 제거
-        if (updated[updated.length - 1]?.sender === 'ai') {
-          updated.pop();
-        }
-        // 마지막 유저 버블이 방금 추가한 것이라면 제거
-        if (updated[updated.length - 1]?.sender === 'user' && updated[updated.length - 1].content === userInput) {
-          updated.pop();
-        }
-        return { ...prev, messages: updated };
-      });
-    }
+      },
+      onDone: () => {
+        setIsSending(false);
+      },
+      onError: (err) => {
+        console.error(err);
+        setError('메시지를 전송하는데 실패했습니다.');
+        setIsSending(false);
+        setChat((prev) => {
+          if (!prev) return prev;
+          const updated = [...prev.messages];
+          if (updated[updated.length - 1]?.sender === 'ai') {
+            updated.pop();
+          }
+          if (updated[updated.length - 1]?.sender === 'user' && updated[updated.length - 1].content === userInput) {
+            updated.pop();
+          }
+          return { ...prev, messages: updated };
+        });
+      },
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

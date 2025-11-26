@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
 
 interface Notification {
   _id: string;
@@ -38,7 +39,10 @@ export const useNotificationSocket = () => {
       return;
     }
 
-    const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const SOCKET_URL =
+      (api.defaults?.baseURL as string | undefined) ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      'http://localhost:5001';
 
     const newSocket = io(`${SOCKET_URL}/notifications`, {
       auth: {

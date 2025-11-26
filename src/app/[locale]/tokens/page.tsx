@@ -58,7 +58,14 @@ export default function TokensPage() {
   const [toast, setToast] = useState<{ severity: 'success' | 'error'; message: string } | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<TokenPackage | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'standard' | 'premium'>('basic');
   const tossPayments = useRef<any>(null);
+
+  const subscriptionPlans = [
+    { id: 'basic', name: '베이직', price: 9900, tokens: 300, description: '가벼운 이용자용' },
+    { id: 'standard', name: '스탠다드', price: 19900, tokens: 1000, description: '일상 대화용' },
+    { id: 'premium', name: '프리미엄', price: 49900, tokens: 5000, description: '헤비 유저용' },
+  ];
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -140,7 +147,7 @@ export default function TokensPage() {
     try {
       if (!tossPayments.current) throw new Error('결제 시스템 초기화 실패');
       const customerKey = user?._id || '';
-      const planType = 'basic'; // 현재는 단일 플랜, 필요 시 UI로 선택 지원
+      const planType = selectedPlan;
       await tossPayments.current.requestBillingAuth('카드', {
         customerKey,
         // authKey가 이 URL로 전달되며, 성공 페이지에서 백엔드로 전달해 빌링키를 발급함
@@ -250,8 +257,37 @@ export default function TokensPage() {
             <Typography variant="body2" color="text.secondary" mb={2}>
               매달 자동으로 토큰이 충전되며, 특별 보상 캐릭터와 수익 혜택이 제공됩니다.
             </Typography>
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              {subscriptionPlans.map((plan) => (
+                <Grid item xs={12} sm={4} key={plan.id}>
+                  <Paper
+                    variant={selectedPlan === plan.id ? 'outlined' : undefined}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      borderColor: selectedPlan === plan.id ? '#ff5f9b' : undefined,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setSelectedPlan(plan.id as typeof selectedPlan)}
+                  >
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      {plan.name}
+                    </Typography>
+                    <Typography variant="h6" color="#ff5f9b" fontWeight={700}>
+                      {plan.price.toLocaleString()}원
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {plan.tokens.toLocaleString()} 토큰/월
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {plan.description}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
             <Button variant="contained" color="secondary" sx={{ borderRadius: 999 }} onClick={handleOpenDialog}>
-              구독 시작하기
+              선택한 플랜으로 구독 시작하기
             </Button>
           </Paper>
         </Box>

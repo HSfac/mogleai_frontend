@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Button, Card, CardContent, CircularProgress, Container, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, CircularProgress, Container, Typography, Chip } from '@mui/material';
 import PageLayout from '@/components/PageLayout';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,9 +14,10 @@ export default function SubscriptionSuccessPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
 
+  const planType = useMemo(() => searchParams.get('planType') || 'basic', [searchParams]);
+
   useEffect(() => {
     const authKey = searchParams.get('authKey');
-    const planType = searchParams.get('planType') || 'basic';
 
     const completeSubscription = async () => {
       if (!authKey) {
@@ -62,6 +63,7 @@ export default function SubscriptionSuccessPage() {
                 <Typography variant="h5" fontWeight={700}>
                   {status === 'success' ? '등록 완료' : '처리 실패'}
                 </Typography>
+                <Chip label={`플랜: ${planType}`} color="secondary" />
                 <Typography color="text.secondary" textAlign="center">
                   {message}
                 </Typography>

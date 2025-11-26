@@ -28,6 +28,7 @@ interface AuthContextType {
   logout: () => void;
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
+  token: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,12 +36,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = authService.getToken();
       if (token) {
+        setToken(token);
         fetchUser();
       } else {
         setLoading(false);
@@ -65,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await authService.login(email, password);
+      setToken(authService.getToken());
       await fetchUser();
       router.push('/');
     } catch (error) {
@@ -77,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await authService.register(email, password, username);
+      setToken(authService.getToken());
       await fetchUser();
       router.push('/');
     } catch (error) {
@@ -88,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     authService.logout();
     setUser(null);
+    setToken(null);
     router.push('/login');
   };
 
@@ -104,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         refreshUser,
-        isAuthenticated: !!user
+        isAuthenticated: !!user,
+        token,
       }}
     >
       {children}
