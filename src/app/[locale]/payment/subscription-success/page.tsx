@@ -16,8 +16,9 @@ export default function SubscriptionSuccessPage() {
 
   useEffect(() => {
     const authKey = searchParams.get('authKey');
+    const planType = searchParams.get('planType') || 'basic';
 
-    const issueKey = async () => {
+    const completeSubscription = async () => {
       if (!authKey) {
         setMessage('authKey가 전달되지 않았습니다.');
         setStatus('error');
@@ -31,16 +32,17 @@ export default function SubscriptionSuccessPage() {
 
       try {
         await paymentService.issueBillingKey(authKey);
+        await paymentService.startSubscription(planType);
         setStatus('success');
-        setMessage('카드가 등록되었어요. 이제 구독을 시작할 수 있습니다.');
+        setMessage('구독이 활성화되었습니다. 매월 자동으로 토큰이 충전됩니다.');
       } catch (error: any) {
-        console.error('빌링키 발급 실패:', error);
+        console.error('구독 완료 실패:', error);
         setStatus('error');
-        setMessage(error?.response?.data?.message || '빌링키 발급에 실패했습니다.');
+        setMessage(error?.response?.data?.message || '구독을 완료하지 못했습니다.');
       }
     };
 
-    issueKey();
+    completeSubscription();
   }, [isAuthenticated, router, searchParams]);
 
   return (

@@ -140,10 +140,11 @@ export default function TokensPage() {
     try {
       if (!tossPayments.current) throw new Error('결제 시스템 초기화 실패');
       const customerKey = user?._id || '';
+      const planType = 'basic'; // 현재는 단일 플랜, 필요 시 UI로 선택 지원
       await tossPayments.current.requestBillingAuth('카드', {
         customerKey,
         // authKey가 이 URL로 전달되며, 성공 페이지에서 백엔드로 전달해 빌링키를 발급함
-        successUrl: `${window.location.origin}/payment/subscription-success`,
+        successUrl: `${window.location.origin}/payment/subscription-success?planType=${planType}`,
         failUrl: `${window.location.origin}/payment/fail`,
       });
     } catch (error: any) {
