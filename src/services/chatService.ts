@@ -1,9 +1,16 @@
 import api from '@/lib/api';
+import { ChatMode, CreateChatOptions, SessionState } from '@/types/user';
 
 export const chatService = {
-  // 새 채팅 생성
-  async createChat(characterId: string, aiModel: string) {
-    const response = await api.post('/chat', { characterId, aiModel });
+  // 새 채팅 생성 (확장)
+  async createChat(options: CreateChatOptions) {
+    const response = await api.post('/chat', {
+      characterId: options.characterId,
+      aiModel: options.aiModel,
+      presetId: options.presetId,
+      mode: options.mode,
+      title: options.title,
+    });
     return response.data;
   },
 
@@ -34,6 +41,24 @@ export const chatService = {
   // 채팅 삭제
   async deleteChat(chatId: string) {
     const response = await api.delete(`/chat/${chatId}`);
+    return response.data;
+  },
+
+  // 채팅 모드 변경
+  async changeMode(chatId: string, mode: ChatMode) {
+    const response = await api.put(`/chat/${chatId}/mode`, { mode });
+    return response.data;
+  },
+
+  // 세션 상태 조회
+  async getSessionState(chatId: string): Promise<SessionState> {
+    const response = await api.get(`/chat/${chatId}/state`);
+    return response.data;
+  },
+
+  // 세션 상태 수정
+  async updateSessionState(chatId: string, state: Partial<SessionState>) {
+    const response = await api.put(`/chat/${chatId}/state`, state);
     return response.data;
   },
 

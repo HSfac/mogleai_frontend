@@ -64,6 +64,16 @@ export default function CreateCharacterPage() {
     memoryEnabled: true,
     maxMemoryMessages: 20,
     category: '',
+    // 고도화 필드
+    worldId: '',
+    ageDisplay: '',
+    species: '',
+    role: '',
+    appearance: '',
+    backgroundStory: '',
+    personalityCore: [] as string[],
+    characterLikes: [] as string[],
+    characterDislikes: [] as string[],
   });
 
   // 이미지 업로드
@@ -356,6 +366,106 @@ export default function CreateCharacterPage() {
                     value={formData.scenario}
                     onChange={handleChange}
                     placeholder="캐릭터가 어떤 상황/환경에 있는지 설명해주세요.&#10;&#10;예:&#10;- 현대 도시의 카페에서 일하는 바리스타&#10;- 판타지 세계의 마법 학교 교수&#10;- 우주 정거장의 AI 시스템"
+                  />
+
+                  <Divider sx={{ my: 2 }}>캐릭터 상세 정보</Divider>
+
+                  {/* 캐릭터 기본 정보 그리드 */}
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="표시 나이"
+                        name="ageDisplay"
+                        value={formData.ageDisplay}
+                        onChange={handleChange}
+                        placeholder="예: 25세, 영원한 17세"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="종족"
+                        name="species"
+                        value={formData.species}
+                        onChange={handleChange}
+                        placeholder="예: 인간, 엘프, AI"
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        fullWidth
+                        label="역할"
+                        name="role"
+                        value={formData.role}
+                        onChange={handleChange}
+                        placeholder="예: 조수, 연인, 친구"
+                      />
+                    </Grid>
+                  </Grid>
+
+                  {/* 외모 설명 */}
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="외모 설명"
+                    name="appearance"
+                    value={formData.appearance}
+                    onChange={handleChange}
+                    placeholder="캐릭터의 외모를 설명해주세요.&#10;예: 긴 검은 머리, 파란 눈, 키 170cm, 날씬한 체형..."
+                  />
+
+                  {/* 배경 스토리 */}
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    label="배경 스토리"
+                    name="backgroundStory"
+                    value={formData.backgroundStory}
+                    onChange={handleChange}
+                    placeholder="캐릭터의 과거와 배경 이야기를 작성해주세요.&#10;이 정보는 AI가 캐릭터를 이해하는 데 사용됩니다."
+                  />
+
+                  {/* 핵심 성격 특성 */}
+                  <TextField
+                    fullWidth
+                    label="핵심 성격 특성 (쉼표로 구분)"
+                    name="personalityCore"
+                    value={formData.personalityCore.join(', ')}
+                    onChange={(e) => {
+                      const traits = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                      setFormData(prev => ({ ...prev, personalityCore: traits }));
+                    }}
+                    placeholder="예: 쾌활함, 진지함, 호기심, 배려심"
+                    helperText="캐릭터의 핵심 성격을 3-5개 키워드로 입력하세요"
+                  />
+
+                  {/* 좋아하는 것 */}
+                  <TextField
+                    fullWidth
+                    label="좋아하는 것 (쉼표로 구분)"
+                    name="characterLikes"
+                    value={formData.characterLikes.join(', ')}
+                    onChange={(e) => {
+                      const likes = e.target.value.split(',').map(l => l.trim()).filter(l => l);
+                      setFormData(prev => ({ ...prev, characterLikes: likes }));
+                    }}
+                    placeholder="예: 음악, 요리, 산책, 독서"
+                  />
+
+                  {/* 싫어하는 것 */}
+                  <TextField
+                    fullWidth
+                    label="싫어하는 것 (쉼표로 구분)"
+                    name="characterDislikes"
+                    value={formData.characterDislikes.join(', ')}
+                    onChange={(e) => {
+                      const dislikes = e.target.value.split(',').map(d => d.trim()).filter(d => d);
+                      setFormData(prev => ({ ...prev, characterDislikes: dislikes }));
+                    }}
+                    placeholder="예: 거짓말, 무례함, 지루함"
                   />
 
                   {/* 카테고리 */}

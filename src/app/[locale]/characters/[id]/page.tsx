@@ -39,6 +39,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
 import { chatService } from '@/services/chatService';
+import PresetManager from '@/components/preset/PresetManager';
 
 export default function CharacterDetailPage({ params }) {
   const router = useRouter();
@@ -50,6 +51,7 @@ export default function CharacterDetailPage({ params }) {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,7 +108,11 @@ export default function CharacterDetailPage({ params }) {
 
     try {
       const aiModel = character?.defaultAIModel || 'gpt4';
-      const newChat = await chatService.createChat(params.id, aiModel);
+      const newChat = await chatService.createChat({
+        characterId: params.id,
+        aiModel,
+        presetId: selectedPresetId,
+      });
       router.push(`/chat/${newChat._id}`);
     } catch (startError) {
       console.error('채팅 생성 중 오류:', startError);
@@ -397,6 +403,17 @@ export default function CharacterDetailPage({ params }) {
               </Typography>
             </Paper>
           </Box>
+        </Box>
+
+        <Divider sx={{ mx: 3 }} />
+
+        {/* 프리셋 관리 */}
+        <Box sx={{ p: 3 }}>
+          <PresetManager
+            characterId={params.id}
+            isOwner={isOwner}
+            onSelectPreset={(presetId) => setSelectedPresetId(presetId)}
+          />
         </Box>
 
         <Divider sx={{ mx: 3 }} />

@@ -7,15 +7,18 @@ import {
   Card,
   Chip,
   CircularProgress,
+  Collapse,
   Container,
   Divider,
   IconButton,
+  LinearProgress,
   Menu,
   MenuItem,
   Alert,
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -25,15 +28,25 @@ import SendIcon from '@mui/icons-material/Send';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import MoodIcon from '@mui/icons-material/Mood';
 import { useAuth } from '@/contexts/AuthContext';
 import { chatService } from '@/services/chatService';
 import { characterService } from '@/services/character.service';
-import { api } from '@/lib/api';
+import { ChatMode, SessionState } from '@/types/user';
+import MemoryPanel from '@/components/memory/MemoryPanel';
+import HistoryIcon from '@mui/icons-material/History';
 
 interface Message {
   sender: 'user' | 'ai';
   content: string;
   timestamp: Date;
+  suggestedReplies?: string[];
 }
 
 interface Chat {
@@ -41,6 +54,9 @@ interface Chat {
   character: string;
   messages: Message[];
   aiModel: string;
+  mode?: ChatMode;
+  sessionState?: SessionState;
+  title?: string;
 }
 
 interface Character {
@@ -50,6 +66,28 @@ interface Character {
   description: string;
   tags?: string[];
 }
+
+// 모드 설정 정보
+const MODE_CONFIG = {
+  [ChatMode.STORY]: {
+    label: '스토리',
+    icon: AutoStoriesIcon,
+    description: '긴 서사와 묘사 중심',
+    color: '#9c27b0',
+  },
+  [ChatMode.CHAT]: {
+    label: '채팅',
+    icon: ChatBubbleOutlineIcon,
+    description: '일상 대화 모드',
+    color: '#ff5f9b',
+  },
+  [ChatMode.CREATOR_DEBUG]: {
+    label: '디버그',
+    icon: BugReportIcon,
+    description: '크리에이터 테스트용',
+    color: '#ff9800',
+  },
+};
 
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -65,6 +103,11 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<{ cancel: () => void } | null>(null);
+
+  // 새로운 상태
+  const [showSessionState, setShowSessionState] = useState(false);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const [modeAnchorEl, setModeAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -148,7 +191,21 @@ export default function ChatPage({ params }: { params: { id: string } }) {
           return { ...prev, messages: updated };
         });
       },
-      onDone: () => {
+      onDone: (payload?: { suggestedReplies?: string[] }) => {
+        // 추천 응답이 있으면 마지막 AI 메시지에 추가
+        if (payload?.suggestedReplies && payload.suggestedReplies.length > 0) {
+          setChat((prev) => {
+            if (!prev) return prev;
+            const updated = [...prev.messages];
+            if (updated.length > 0 && updated[updated.length - 1]?.sender === 'ai') {
+              updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                suggestedReplies: payload.suggestedReplies,
+              };
+            }
+            return { ...prev, messages: updated };
+          });
+        }
         setIsSending(false);
       },
       onError: (err) => {
@@ -200,6 +257,34 @@ export default function ChatPage({ params }: { params: { id: string } }) {
       setError('채팅 삭제에 실패했습니다.');
     }
   };
+
+  // 모드 변경 핸들러
+  const handleChangeMode = async (mode: ChatMode) => {
+    setModeAnchorEl(null);
+    try {
+      const updatedChat = await chatService.changeMode(id, mode);
+      setChat(updatedChat);
+      const modeLabel = MODE_CONFIG[mode]?.label || mode;
+      setToast({ message: `모드가 "${modeLabel}"(으)로 변경되었습니다.`, severity: 'success' });
+    } catch (changeModeError: any) {
+      console.error(changeModeError);
+      setError('모드 변경에 실패했습니다.');
+    }
+  };
+
+  // 추천 응답 선택 핸들러
+  const handleSelectSuggestion = (suggestion: string) => {
+    setMessage(suggestion);
+  };
+
+  // 현재 모드 정보
+  const currentMode = chat?.mode || ChatMode.CHAT;
+  const currentModeConfig = MODE_CONFIG[currentMode];
+  const ModeIcon = currentModeConfig?.icon || ChatBubbleOutlineIcon;
+
+  // 마지막 AI 메시지의 추천 응답
+  const lastAiMessage = chat?.messages.filter((m) => m.sender === 'ai').slice(-1)[0];
+  const suggestedReplies = lastAiMessage?.suggestedReplies || [];
 
   if (isLoading) {
     return (
@@ -264,10 +349,175 @@ export default function ChatPage({ params }: { params: { id: string } }) {
               </Box>
               <Stack direction="column" spacing={1}>
                 <Chip label={`AI 모델: ${chat.aiModel}`} variant="outlined" sx={{ borderColor: '#fff', color: '#fff' }} />
-                <Chip label={`내 메시지 ${messageStats.user}`} variant="outlined" sx={{ borderColor: '#fff', color: '#fff' }} />
-                <Chip label={`AI 응답 ${messageStats.ai}`} variant="outlined" sx={{ borderColor: '#fff', color: '#fff' }} />
+                <Chip
+                  icon={<ModeIcon sx={{ color: '#fff !important' }} />}
+                  label={currentModeConfig?.label || '채팅'}
+                  variant="outlined"
+                  onClick={(e) => setModeAnchorEl(e.currentTarget)}
+                  sx={{ borderColor: '#fff', color: '#fff', cursor: 'pointer' }}
+                />
+                <Menu
+                  anchorEl={modeAnchorEl}
+                  open={Boolean(modeAnchorEl)}
+                  onClose={() => setModeAnchorEl(null)}
+                >
+                  {Object.entries(MODE_CONFIG).map(([mode, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <MenuItem
+                        key={mode}
+                        onClick={() => handleChangeMode(mode as ChatMode)}
+                        selected={currentMode === mode}
+                      >
+                        <Icon sx={{ mr: 1, color: config.color }} />
+                        <Box>
+                          <Typography variant="body2" fontWeight={600}>
+                            {config.label}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {config.description}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Menu>
+                <Chip label={`메시지 ${messageStats.user + messageStats.ai}`} variant="outlined" sx={{ borderColor: '#fff', color: '#fff' }} />
               </Stack>
             </Stack>
+          </Card>
+
+          {/* 세션 상태 패널 */}
+          {chat.sessionState && (
+            <Card sx={{ borderRadius: 1, overflow: 'hidden' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: 'rgba(255,95,155,0.1)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setShowSessionState(!showSessionState)}
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <MoodIcon sx={{ color: '#ff5f9b' }} />
+                  <Typography variant="body2" fontWeight={600}>
+                    세션 상태
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={chat.sessionState.mood || '평온'}
+                    sx={{ bgcolor: '#ffe4f5', color: '#c3006e' }}
+                  />
+                </Stack>
+                <IconButton size="small">
+                  {showSessionState ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
+              <Collapse in={showSessionState}>
+                <Box sx={{ p: 2, bgcolor: '#fff' }}>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        관계 레벨
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <LinearProgress
+                          variant="determinate"
+                          value={(chat.sessionState.relationshipLevel || 0) * 20}
+                          sx={{
+                            flex: 1,
+                            height: 8,
+                            borderRadius: 4,
+                            bgcolor: '#ffe4f5',
+                            '& .MuiLinearProgress-bar': { bgcolor: '#ff5f9b' },
+                          }}
+                        />
+                        <Stack direction="row">
+                          {[...Array(5)].map((_, i) => (
+                            <FavoriteIcon
+                              key={i}
+                              sx={{
+                                fontSize: 16,
+                                color: i < (chat.sessionState?.relationshipLevel || 0) ? '#ff5f9b' : '#e0e0e0',
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      </Stack>
+                    </Box>
+                    {chat.sessionState.scene && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          현재 장면
+                        </Typography>
+                        <Typography variant="body2">{chat.sessionState.scene}</Typography>
+                      </Box>
+                    )}
+                    {chat.sessionState.lastSceneSummary && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">
+                          이전 요약
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                          {chat.sessionState.lastSceneSummary}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        진행도
+                      </Typography>
+                      <Stack direction="row" spacing={0.5}>
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <Box
+                            key={level}
+                            sx={{
+                              width: 24,
+                              height: 8,
+                              borderRadius: 1,
+                              bgcolor: level <= (chat.sessionState?.progressCounter || 1) ? '#ff5f9b' : '#e0e0e0',
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Collapse>
+            </Card>
+          )}
+
+          {/* 메모리 패널 */}
+          <Card sx={{ borderRadius: 1, overflow: 'hidden' }}>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: 'rgba(255,95,155,0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+              }}
+              onClick={() => setShowMemoryPanel(!showMemoryPanel)}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <HistoryIcon sx={{ color: '#ff5f9b' }} />
+                <Typography variant="body2" fontWeight={600}>
+                  메모리 & 노트
+                </Typography>
+              </Stack>
+              <IconButton size="small">
+                {showMemoryPanel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+              </IconButton>
+            </Box>
+            <Collapse in={showMemoryPanel}>
+              <Box sx={{ p: 2, bgcolor: '#fff' }}>
+                <MemoryPanel chatId={id} characterId={chat.character} />
+              </Box>
+            </Collapse>
           </Card>
 
           <Card
@@ -376,6 +626,30 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                 borderTop: '1px solid rgba(255,95,155,0.2)',
               }}
             >
+              {/* 추천 응답 버튼들 (스토리 모드에서만) */}
+              {suggestedReplies.length > 0 && currentMode === ChatMode.STORY && !isSending && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    추천 응답
+                  </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {suggestedReplies.map((suggestion, idx) => (
+                      <Chip
+                        key={idx}
+                        label={suggestion}
+                        onClick={() => handleSelectSuggestion(suggestion)}
+                        sx={{
+                          bgcolor: '#ffe4f5',
+                          color: '#c3006e',
+                          '&:hover': { bgcolor: '#ffd0ec' },
+                          mb: 1,
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
               <Stack direction="row" spacing={2}>
                 <TextField
                   fullWidth

@@ -130,7 +130,10 @@ export default function ChatPage() {
 
   const handleStartChat = async (character: Character) => {
     try {
-      const chat = await chatService.createChat(character._id, character.defaultAIModel || 'gpt4');
+      const chat = await chatService.createChat({
+        characterId: character._id,
+        aiModel: character.defaultAIModel || 'gpt4',
+      });
       router.push(`/chat/${chat._id}`);
     } catch (startError) {
       console.error('채팅을 시작하지 못했습니다:', startError);
