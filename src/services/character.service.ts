@@ -72,4 +72,12 @@ export const characterService = {
     const response = await api.get('/characters/creator/dashboard');
     return response.data;
   },
+
+  // ==================== 이미지 분석 API ====================
+
+  // 이미지 분석으로 캐릭터 초안 생성
+  async analyzeImageForCharacter(imageUrl: string) {
+    const response = await api.post('/characters/analyze-image', { imageUrl });
+    return response.data;
+  },
 };

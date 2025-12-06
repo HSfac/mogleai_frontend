@@ -107,6 +107,9 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   // 새로운 상태
   const [showSessionState, setShowSessionState] = useState(false);
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
   const [modeAnchorEl, setModeAnchorEl] = useState<null | HTMLElement>(null);
 
   useEffect(() => {
@@ -275,6 +278,22 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   // 추천 응답 선택 핸들러
   const handleSelectSuggestion = (suggestion: string) => {
     setMessage(suggestion);
+  };
+
+  // 디버그 정보 로드
+  const loadDebugInfo = async () => {
+    if (loadingDebug) return;
+    setLoadingDebug(true);
+    try {
+      const info = await chatService.getDebugInfo(id);
+      setDebugInfo(info);
+      setShowDebugPanel(true);
+    } catch (debugError: any) {
+      console.error(debugError);
+      setError('디버그 정보를 불러오는데 실패했습니다.');
+    } finally {
+      setLoadingDebug(false);
+    }
   };
 
   // 현재 모드 정보
@@ -519,6 +538,153 @@ export default function ChatPage({ params }: { params: { id: string } }) {
               </Box>
             </Collapse>
           </Card>
+
+          {/* 디버그 패널 (Creator Debug 모드에서만 표시) */}
+          {currentMode === ChatMode.CREATOR_DEBUG && (
+            <Card sx={{ borderRadius: 1, overflow: 'hidden', border: '2px solid #ff9800' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: 'rgba(255,152,0,0.1)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                }}
+                onClick={() => (showDebugPanel ? setShowDebugPanel(false) : loadDebugInfo())}
+              >
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <BugReportIcon sx={{ color: '#ff9800' }} />
+                  <Typography variant="body2" fontWeight={600} color="#ff9800">
+                    디버그 정보
+                  </Typography>
+                  {loadingDebug && <CircularProgress size={16} sx={{ color: '#ff9800' }} />}
+                </Stack>
+                <IconButton size="small">
+                  {showDebugPanel ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Box>
+              <Collapse in={showDebugPanel}>
+                {debugInfo && (
+                  <Box sx={{ p: 2, bgcolor: '#fffdf5', maxHeight: 400, overflowY: 'auto' }}>
+                    <Stack spacing={2}>
+                      {/* 채팅 정보 */}
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                          채팅 정보
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          <Chip size="small" label={`모드: ${debugInfo.chatInfo.mode}`} />
+                          <Chip size="small" label={`AI: ${debugInfo.chatInfo.aiModel}`} />
+                          <Chip size="small" label={`메시지: ${debugInfo.chatInfo.messageCount}개`} />
+                          <Chip size="small" label={`토큰: ${debugInfo.chatInfo.totalTokensUsed}`} />
+                          <Chip size="small" label={`메모리 요약: ${debugInfo.chatInfo.memorySummaryCount}개`} />
+                        </Stack>
+                      </Box>
+
+                      {/* 캐릭터 정보 */}
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                          캐릭터 정보
+                        </Typography>
+                        <Typography variant="body2">
+                          이름: {debugInfo.characterInfo.name}
+                          {debugInfo.characterInfo.isCreator && (
+                            <Chip size="small" label="내 캐릭터" color="success" sx={{ ml: 1, height: 20 }} />
+                          )}
+                        </Typography>
+                        {debugInfo.characterInfo.worldId && (
+                          <Typography variant="caption" color="text.secondary">
+                            세계관 ID: {debugInfo.characterInfo.worldId}
+                          </Typography>
+                        )}
+                      </Box>
+
+                      {/* 세션 상태 */}
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                          세션 상태
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          <Chip size="small" variant="outlined" label={`분위기: ${debugInfo.sessionState?.mood || '없음'}`} />
+                          <Chip size="small" variant="outlined" label={`관계: Lv.${debugInfo.sessionState?.relationshipLevel || 0}`} />
+                          <Chip size="small" variant="outlined" label={`진행도: ${debugInfo.sessionState?.progressCounter || 1}/5`} />
+                        </Stack>
+                      </Box>
+
+                      {/* 컨텍스트 정보 */}
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                          컨텍스트 정보
+                        </Typography>
+                        <Typography variant="body2">
+                          시스템 프롬프트 길이: {debugInfo.context.systemPromptLength}자
+                        </Typography>
+                        <Typography variant="body2">
+                          컨텍스트 메시지: {debugInfo.context.messagesCount}개
+                        </Typography>
+                        <Typography variant="body2">
+                          선택지 포함: {debugInfo.context.includeSuggestions ? '예' : '아니오'}
+                        </Typography>
+                      </Box>
+
+                      {/* 시스템 프롬프트 미리보기 (크리에이터만) */}
+                      {debugInfo.context.fullSystemPrompt && (
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                            시스템 프롬프트
+                          </Typography>
+                          <Box
+                            sx={{
+                              bgcolor: '#f5f5f5',
+                              p: 1.5,
+                              borderRadius: 1,
+                              maxHeight: 200,
+                              overflowY: 'auto',
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {debugInfo.context.fullSystemPrompt}
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* 메모리 요약 */}
+                      {debugInfo.memorySummaries?.length > 0 && (
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={700} color="#ff9800" gutterBottom>
+                            최근 메모리 요약 ({debugInfo.memorySummaries.length}개)
+                          </Typography>
+                          {debugInfo.memorySummaries.map((summary: any, idx: number) => (
+                            <Box
+                              key={summary.id}
+                              sx={{
+                                bgcolor: '#f9f9f9',
+                                p: 1,
+                                borderRadius: 1,
+                                mb: 1,
+                                borderLeft: '3px solid #ff9800',
+                              }}
+                            >
+                              <Typography variant="caption" color="text.secondary">
+                                메시지 {summary.messageRange.startIndex}-{summary.messageRange.endIndex}
+                              </Typography>
+                              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                {summary.summaryText}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
+                    </Stack>
+                  </Box>
+                )}
+              </Collapse>
+            </Card>
+          )}
 
           <Card
             sx={{

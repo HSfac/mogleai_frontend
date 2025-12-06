@@ -62,6 +62,12 @@ export const chatService = {
     return response.data;
   },
 
+  // 디버그 정보 조회 (크리에이터용)
+  async getDebugInfo(chatId: string) {
+    const response = await api.get(`/chat/${chatId}/debug`);
+    return response.data;
+  },
+
   /**
    * SSE 스트리밍 메시지 전송
    */

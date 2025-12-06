@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -35,6 +35,8 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { characterService } from '@/services/character.service';
+import { worldService } from '@/services/worldService';
+import { World } from '@/types/world';
 
 export default function CreateCharacterPage() {
   const router = useRouter();
@@ -81,11 +83,45 @@ export default function CreateCharacterPage() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // 세계관 목록
+  const [worlds, setWorlds] = useState<World[]>([]);
+  const [loadingWorlds, setLoadingWorlds] = useState(false);
+
+  // AI 이미지 분석
+  const [analyzingImage, setAnalyzingImage] = useState(false);
+
   // 인증 확인
   if (!isAuthenticated) {
     router.push('/login?redirect=/characters/create');
     return null;
   }
+
+  // 세계관 목록 로드
+  useEffect(() => {
+    const loadWorlds = async () => {
+      setLoadingWorlds(true);
+      try {
+        // 내 세계관 + 공개 세계관 가져오기
+        const [myWorlds, publicWorlds] = await Promise.all([
+          worldService.getMyWorlds(),
+          worldService.getPopularWorlds(20),
+        ]);
+        // 중복 제거
+        const allWorlds = [...myWorlds];
+        publicWorlds.forEach((pw) => {
+          if (!allWorlds.find((w) => w._id === pw._id)) {
+            allWorlds.push(pw);
+          }
+        });
+        setWorlds(allWorlds);
+      } catch (err) {
+        console.error('세계관 로드 실패:', err);
+      } finally {
+        setLoadingWorlds(false);
+      }
+    };
+    loadWorlds();
+  }, []);
 
   // 입력 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -165,6 +201,58 @@ export default function CreateCharacterPage() {
       throw error;
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  // AI 이미지 분석으로 캐릭터 초안 생성
+  const handleAnalyzeImage = async () => {
+    if (!imagePreview) {
+      setError('분석할 이미지를 먼저 업로드해주세요.');
+      return;
+    }
+
+    setAnalyzingImage(true);
+    setError('');
+
+    try {
+      // 이미지가 아직 서버에 업로드되지 않았으면 먼저 업로드
+      let imageUrl = formData.profileImage;
+      if (imageFile && !imageUrl) {
+        imageUrl = await uploadImage();
+        setFormData((prev) => ({ ...prev, profileImage: imageUrl }));
+      }
+
+      // 이미지 분석 API 호출
+      const result = await characterService.analyzeImageForCharacter(imageUrl || imagePreview);
+
+      if (result.success && result.data) {
+        const data = result.data;
+        // 폼 데이터 업데이트
+        setFormData((prev) => ({
+          ...prev,
+          name: data.name || prev.name,
+          description: data.description || prev.description,
+          personality: data.personality || prev.personality,
+          speakingStyle: data.speakingStyle || prev.speakingStyle,
+          greeting: data.greeting || prev.greeting,
+          ageDisplay: data.ageDisplay || prev.ageDisplay,
+          species: data.species || prev.species,
+          role: data.role || prev.role,
+          appearance: data.appearance || prev.appearance,
+          personalityCore: data.personalityCore?.length > 0 ? data.personalityCore : prev.personalityCore,
+          characterLikes: data.characterLikes?.length > 0 ? data.characterLikes : prev.characterLikes,
+          characterDislikes: data.characterDislikes?.length > 0 ? data.characterDislikes : prev.characterDislikes,
+          tags: data.tags?.length > 0 ? data.tags : prev.tags,
+        }));
+        setSuccess('AI가 이미지를 분석하여 캐릭터 정보를 생성했습니다. 내용을 확인하고 수정해주세요!');
+      } else {
+        setError(result.error || '이미지 분석에 실패했습니다.');
+      }
+    } catch (analyzeError: any) {
+      console.error('이미지 분석 실패:', analyzeError);
+      setError('이미지 분석 중 오류가 발생했습니다.');
+    } finally {
+      setAnalyzingImage(false);
     }
   };
 
@@ -342,6 +430,50 @@ export default function CreateCharacterPage() {
                   </FormControl>
 
                   <Divider sx={{ my: 2 }}>고급 설정</Divider>
+
+                  {/* 세계관 선택 */}
+                  <FormControl fullWidth>
+                    <InputLabel>세계관 선택 (선택사항)</InputLabel>
+                    <Select
+                      name="worldId"
+                      value={formData.worldId}
+                      onChange={handleSelectChange}
+                      label="세계관 선택 (선택사항)"
+                      disabled={loadingWorlds}
+                    >
+                      <MenuItem value="">
+                        <em>세계관 없음</em>
+                      </MenuItem>
+                      {worlds.map((world) => (
+                        <MenuItem key={world._id} value={world._id}>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {world.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {world.description?.substring(0, 50)}
+                              {(world.description?.length || 0) > 50 ? '...' : ''}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {loadingWorlds && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        세계관 목록 로딩 중...
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                      캐릭터가 속한 세계관을 선택하면 해당 세계관의 설정이 대화에 반영됩니다.{' '}
+                      <Button
+                        size="small"
+                        onClick={() => router.push('/worlds/create')}
+                        sx={{ fontSize: '0.75rem', p: 0, minWidth: 'auto' }}
+                      >
+                        새 세계관 만들기
+                      </Button>
+                    </Typography>
+                  </FormControl>
 
                   {/* 첫 인사말 */}
                   <TextField
@@ -688,6 +820,35 @@ export default function CreateCharacterPage() {
                             onChange={handleImageSelect}
                           />
                         </Button>
+
+                        {/* AI 이미지 분석 버튼 */}
+                        {imagePreview && (
+                          <Button
+                            component="span"
+                            variant="outlined"
+                            onClick={handleAnalyzeImage}
+                            disabled={analyzingImage || uploadingImage}
+                            fullWidth
+                            sx={{
+                              mt: 1,
+                              borderColor: '#9c27b0',
+                              color: '#9c27b0',
+                              '&:hover': {
+                                borderColor: '#7b1fa2',
+                                bgcolor: 'rgba(156, 39, 176, 0.04)',
+                              },
+                            }}
+                          >
+                            {analyzingImage ? (
+                              <>
+                                <CircularProgress size={16} sx={{ mr: 1, color: '#9c27b0' }} />
+                                AI 분석 중...
+                              </>
+                            ) : (
+                              '✨ AI로 캐릭터 정보 생성'
+                            )}
+                          </Button>
+                        )}
                       </Box>
                     </CardContent>
                   </Card>
