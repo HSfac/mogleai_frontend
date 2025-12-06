@@ -58,3 +58,9 @@ export interface WorldListResponse {
   limit: number;
   totalPages: number;
 }
+
+// 인기 태그 응답
+export interface PopularTag {
+  tag: string;
+  count: number;
+}

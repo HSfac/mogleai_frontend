@@ -756,16 +756,263 @@ export default function HomePage() {
             </>
           )}
 
-          {/* Tab 2+: Other tabs placeholder */}
-          {activeTab >= 2 && (
-            <Box textAlign="center" py={8}>
-              <Typography variant="h6" sx={{ color: '#999', mb: 2 }}>
-                준비 중입니다
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                해당 탭의 콘텐츠를 곧 추가할 예정입니다
-              </Typography>
-            </Box>
+          {/* Tab 2: 랭킹 */}
+          {activeTab === 2 && (
+            <>
+              <Box mb={{ xs: 3, md: 4 }}>
+                <Typography
+                  variant="h6"
+                  fontWeight={700}
+                  sx={{ color: '#fff', fontSize: { xs: '1.1rem', md: '1.5rem' }, mb: 1 }}
+                >
+                  🏆 전체 랭킹
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#999' }}>
+                  가장 사랑받는 캐릭터 TOP 20
+                </Typography>
+              </Box>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" py={8}>
+                  <CircularProgress sx={{ color: '#ff3366' }} />
+                </Box>
+              ) : (
+                <Grid container spacing={{ xs: 2, md: 3 }}>
+                  {popularCharacters.slice(0, 20).map((character, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={character._id}>
+                      <Card
+                        sx={{
+                          bgcolor: '#242424',
+                          borderRadius: 1,
+                          border: index < 3 ? '2px solid #ff3366' : '1px solid #333',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s',
+                          '&:hover': { transform: 'translateY(-4px)', borderColor: '#ff3366' },
+                        }}
+                        onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
+                      >
+                        <Box sx={{ position: 'relative' }}>
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 12,
+                              left: 12,
+                              width: 40,
+                              height: 40,
+                              borderRadius: 1,
+                              background: index < 3 ? 'linear-gradient(135deg, #ff3366, #ff6699)' : 'rgba(0,0,0,0.7)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.2rem',
+                              fontWeight: 800,
+                              color: '#fff',
+                              zIndex: 2,
+                            }}
+                          >
+                            {index + 1}
+                          </Box>
+                          <Box sx={{ height: 180, background: '#2a2a2a', overflow: 'hidden' }}>
+                            {character.profileImage ? (
+                              <Box component="img" src={character.profileImage} alt={character.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem', color: '#666' }}>
+                                {character.name[0]}
+                              </Box>
+                            )}
+                          </Box>
+                        </Box>
+                        <CardContent sx={{ p: 2 }}>
+                          <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 0.5 }}>{character.name}</Typography>
+                          <Typography variant="caption" sx={{ color: '#999', display: 'block', mb: 1 }}>@{character.creator?.username || '크리에이터'}</Typography>
+                          <Stack direction="row" spacing={2}>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <FavoriteIcon sx={{ fontSize: 16, color: '#ff3366' }} />
+                              <Typography variant="caption" sx={{ color: '#999' }}>{character.likes || 0}</Typography>
+                            </Stack>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              <ChatBubbleOutlineIcon sx={{ fontSize: 16, color: '#999' }} />
+                              <Typography variant="caption" sx={{ color: '#999' }}>{character.usageCount || 0}</Typography>
+                            </Stack>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+
+              <Box display="flex" justifyContent="center" mt={4}>
+                <Button
+                  variant="outlined"
+                  onClick={() => router.push(getLocalePath('/leaderboard'))}
+                  sx={{ borderColor: '#ff3366', color: '#ff3366', borderRadius: 999, px: 4, '&:hover': { borderColor: '#ff3366', bgcolor: 'rgba(255, 51, 102, 0.1)' } }}
+                >
+                  전체 랭킹 보기
+                </Button>
+              </Box>
+            </>
+          )}
+
+          {/* Tab 3: 카테고리 */}
+          {activeTab === 3 && (
+            <>
+              <Box mb={{ xs: 3, md: 4 }}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', fontSize: { xs: '1.1rem', md: '1.5rem' }, mb: 1 }}>
+                  📂 카테고리
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#999' }}>원하는 카테고리의 캐릭터를 찾아보세요</Typography>
+              </Box>
+
+              <Grid container spacing={2}>
+                {[
+                  { name: '연애/로맨스', icon: '💕', color: '#ff6b9d' },
+                  { name: '판타지', icon: '🧙‍♂️', color: '#9b59b6' },
+                  { name: '일상/힐링', icon: '☀️', color: '#f39c12' },
+                  { name: '액션/어드벤처', icon: '⚔️', color: '#e74c3c' },
+                  { name: 'SF/미래', icon: '🚀', color: '#3498db' },
+                  { name: '공포/미스터리', icon: '👻', color: '#2c3e50' },
+                  { name: '코미디', icon: '😂', color: '#1abc9c' },
+                  { name: '역사/시대극', icon: '🏛️', color: '#8b4513' },
+                  { name: '학원물', icon: '🎓', color: '#ff9ff3' },
+                  { name: '직장/사회', icon: '💼', color: '#576574' },
+                  { name: '가상 친구', icon: '🤖', color: '#00d2d3' },
+                  { name: '멘토/상담', icon: '💡', color: '#ffeaa7' },
+                ].map((category) => (
+                  <Grid item xs={6} sm={4} md={3} key={category.name}>
+                    <Card
+                      sx={{
+                        bgcolor: '#242424',
+                        borderRadius: 2,
+                        border: '1px solid #333',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s',
+                        '&:hover': { transform: 'translateY(-4px)', borderColor: category.color, boxShadow: `0 8px 24px ${category.color}40` },
+                      }}
+                      onClick={() => router.push(getLocalePath(`/search?category=${encodeURIComponent(category.name)}`))}
+                    >
+                      <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                        <Typography variant="h3" sx={{ mb: 1 }}>{category.icon}</Typography>
+                        <Typography variant="body1" fontWeight={600} sx={{ color: '#fff' }}>{category.name}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
+
+          {/* Tab 4: 태그 */}
+          {activeTab === 4 && (
+            <>
+              <Box mb={{ xs: 3, md: 4 }}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', fontSize: { xs: '1.1rem', md: '1.5rem' }, mb: 1 }}>
+                  🏷️ 인기 태그
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#999' }}>태그를 클릭하여 관련 캐릭터를 찾아보세요</Typography>
+              </Box>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ gap: 1, mb: 4 }}>
+                {['연애', '판타지', '로맨스', '학원', '힐링', '코미디', 'SF', '공포', '미스터리', '액션', '일상', '상담', '멘토', '친구', '이세계', '마법', '귀여움', '츤데레', '얀데레', '순수', '쿨한', '다정한', '장난꾸러기', '진지한', '밝은'].map((tag, index) => (
+                  <Chip
+                    key={tag}
+                    label={`#${tag}`}
+                    onClick={() => router.push(getLocalePath(`/search?tag=${encodeURIComponent(tag)}`))}
+                    sx={{
+                      bgcolor: index < 5 ? '#ff3366' : '#333',
+                      color: '#fff',
+                      fontWeight: 600,
+                      fontSize: index < 5 ? '0.95rem' : '0.85rem',
+                      py: index < 5 ? 2.5 : 2,
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: '#ff3366', transform: 'scale(1.05)' },
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                ))}
+              </Stack>
+
+              <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 2 }}>🔥 태그별 인기 캐릭터</Typography>
+
+              <Grid container spacing={2}>
+                {latestCharacters.slice(0, 8).map((character) => (
+                  <Grid item xs={6} sm={4} md={3} key={character._id}>
+                    <Card
+                      sx={{ bgcolor: '#242424', borderRadius: 1, border: '1px solid #333', cursor: 'pointer', transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', borderColor: '#ff3366' } }}
+                      onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
+                    >
+                      <Box sx={{ aspectRatio: '1/1', background: '#2a2a2a' }}>
+                        {character.profileImage ? (
+                          <Box component="img" src={character.profileImage} alt={character.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', color: '#666' }}>{character.name[0]}</Box>
+                        )}
+                      </Box>
+                      <CardContent sx={{ p: 1.5 }}>
+                        <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#fff' }}>{character.name}</Typography>
+                        <Stack direction="row" spacing={0.5} mt={0.5} flexWrap="wrap">
+                          {character.tags?.slice(0, 2).map((tag: string) => (
+                            <Chip key={tag} label={tag} size="small" sx={{ bgcolor: '#333', color: '#ff3366', fontSize: '0.65rem', height: 20 }} />
+                          ))}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </>
+          )}
+
+          {/* Tab 5: 베이비즈 */}
+          {activeTab === 5 && (
+            <>
+              <Box mb={{ xs: 3, md: 4 }}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', fontSize: { xs: '1.1rem', md: '1.5rem' }, mb: 1 }}>
+                  🍼 베이비즈
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#999' }}>신규 크리에이터들의 첫 캐릭터를 만나보세요</Typography>
+              </Box>
+
+              <Box sx={{ bgcolor: '#1a1a1a', borderRadius: 2, border: '1px solid #333', p: 3, mb: 4 }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Box sx={{ width: 60, height: 60, borderRadius: 2, bgcolor: '#ff3366', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🎉</Box>
+                  <Box>
+                    <Typography variant="h6" fontWeight={700} sx={{ color: '#fff' }}>신규 크리에이터 응원 이벤트</Typography>
+                    <Typography variant="body2" sx={{ color: '#999' }}>첫 캐릭터와 대화하면 보너스 토큰 10개 지급!</Typography>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {loading ? (
+                <Box display="flex" justifyContent="center" py={8}>
+                  <CircularProgress sx={{ color: '#ff3366' }} />
+                </Box>
+              ) : (
+                <Grid container spacing={2}>
+                  {latestCharacters.map((character) => (
+                    <Grid item xs={6} sm={4} md={3} lg={2.4} key={character._id}>
+                      <Card
+                        sx={{ bgcolor: '#242424', borderRadius: 1, border: '1px solid #333', cursor: 'pointer', transition: 'all 0.3s', position: 'relative', '&:hover': { transform: 'translateY(-4px)', borderColor: '#ff3366' } }}
+                        onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
+                      >
+                        <Box sx={{ position: 'absolute', top: 8, left: 8, bgcolor: '#4caf50', color: '#fff', px: 1, py: 0.3, borderRadius: 1, fontSize: '0.7rem', fontWeight: 700, zIndex: 2 }}>NEW CREATOR</Box>
+                        <Box sx={{ aspectRatio: '3/4', background: '#2a2a2a' }}>
+                          {character.profileImage ? (
+                            <Box component="img" src={character.profileImage} alt={character.name} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', color: '#666' }}>{character.name[0]}</Box>
+                          )}
+                        </Box>
+                        <CardContent sx={{ p: 1.5 }}>
+                          <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#fff' }}>{character.name}</Typography>
+                          <Typography variant="caption" sx={{ color: '#999' }}>@{character.creator?.username || '크리에이터'}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </>
           )}
         </Container>
       </Box>

@@ -5,6 +5,7 @@ import {
   UpdateWorldDto,
   WorldQueryOptions,
   WorldListResponse,
+  PopularTag,
 } from '@/types/world';
 
 export const worldService = {
@@ -31,7 +32,7 @@ export const worldService = {
   },
 
   // 인기 태그 조회
-  async getPopularTags(limit?: number): Promise<string[]> {
+  async getPopularTags(limit?: number): Promise<PopularTag[]> {
     const response = await api.get('/worlds/tags/popular', {
       params: { limit },
     });
