@@ -20,13 +20,39 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Grow,
+  keyframes,
 } from '@mui/material';
 import TokenIcon from '@mui/icons-material/Token';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PagesIcon from '@mui/icons-material/Pages';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import StarIcon from '@mui/icons-material/Star';
+import BoltIcon from '@mui/icons-material/Bolt';
+import DiamondIcon from '@mui/icons-material/Diamond';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import LockIcon from '@mui/icons-material/Lock';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { paymentService } from '@/services/paymentService';
+
+// 애니메이션
+const shimmer = keyframes`
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+`;
+
+const pulse = keyframes`
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+`;
+
+const float = keyframes`
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+`;
 
 interface TokenPackage {
   id: string;
@@ -44,9 +70,9 @@ declare global {
 }
 
 const heroHighlights = [
-  { label: '구매 즉시 반영', icon: <TokenIcon />, description: '토큰은 충전 직후 사용 가능합니다.' },
-  { label: '자동 구독', icon: <SettingsIcon />, description: '매달 자동 충전으로 대화 흐름 유지.' },
-  { label: '투명한 기록', icon: <PagesIcon />, description: '결제 이력은 프로필에서 바로 확인 가능합니다.' },
+  { label: '즉시 충전', icon: <BoltIcon />, description: '결제 완료 후 바로 사용' },
+  { label: '자동 구독', icon: <AutorenewIcon />, description: '매달 자동 충전' },
+  { label: '안전 결제', icon: <VerifiedUserIcon />, description: '토스페이먼츠 보안' },
 ];
 
 export default function TokensPage() {
@@ -171,138 +197,525 @@ export default function TokensPage() {
     );
   }
 
+  // 토큰당 가격 계산
+  const getPerTokenPrice = (pkg: TokenPackage) => {
+    return Math.round(pkg.price / pkg.tokens);
+  };
+
   return (
     <PageLayout>
       <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* 헤더 섹션 - 글래스모피즘 스타일 */}
         <Box
           sx={{
-            borderRadius: 28,
-            background: 'linear-gradient(135deg, rgba(255,95,155,0.9), rgba(255,214,222,0.95))',
+            borderRadius: 6,
+            background: 'linear-gradient(135deg, rgba(255,95,155,0.95) 0%, rgba(255,140,180,0.9) 50%, rgba(255,180,200,0.85) 100%)',
             color: '#fff',
-            px: { xs: 3, md: 4 },
-            py: { xs: 4, md: 5 },
+            px: { xs: 3, md: 5 },
+            py: { xs: 4, md: 6 },
             mb: 5,
-            boxShadow: '0 30px 60px rgba(255, 95, 155, 0.35)',
+            boxShadow: '0 20px 60px rgba(255, 95, 155, 0.3), 0 8px 20px rgba(255, 95, 155, 0.2)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at 90% 20%, rgba(255,255,255,0.2) 0%, transparent 40%)',
+              pointerEvents: 'none',
+            },
           }}
         >
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            토큰을 충전하고, 자유롭게 대화하세요
-          </Typography>
-          <Typography variant="body1" sx={{ maxWidth: 620, opacity: 0.9, mb: 3 }}>
-            원하는 토큰 패키지를 선택하고 즉시 AI 캐릭터와 대화를 시작하세요. 구독 옵션을 통해 매월 자동으로 토큰을 충전할 수도 있습니다.
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            {heroHighlights.map((item) => (
-              <Chip
-                key={item.label}
-                icon={item.icon}
-                label={item.label}
-                variant="filled"
-                sx={{ bgcolor: 'rgba(255,255,255,0.2)', fontWeight: 600 }}
-              />
-            ))}
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={4} alignItems="center">
+            <Box sx={{ flex: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 3,
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    animation: `${float} 3s ease-in-out infinite`,
+                  }}
+                >
+                  <DiamondIcon sx={{ fontSize: 28, color: '#fff' }} />
+                </Box>
+                <Box>
+                  <Typography variant="h4" fontWeight={800} sx={{ textShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+                    토큰 충전소
+                  </Typography>
+                </Box>
+              </Stack>
+              <Typography variant="body1" sx={{ maxWidth: 500, opacity: 0.95, lineHeight: 1.7, mb: 3 }}>
+                AI 캐릭터와의 대화에 사용할 토큰을 충전하세요.
+                더 많이 구매할수록 토큰당 가격이 저렴해집니다!
+              </Typography>
+
+              {/* 현재 토큰 잔액 */}
+              {user && (
+                <Box
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    px: 3,
+                    py: 1.5,
+                    border: '1px solid rgba(255,255,255,0.3)',
+                  }}
+                >
+                  <TokenIcon sx={{ fontSize: 24 }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                      현재 보유 토큰
+                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>
+                      {(user.tokens || 0).toLocaleString()}개
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+
+            {/* 하이라이트 카드 */}
+            <Stack spacing={1.5}>
+              {heroHighlights.map((item) => (
+                <Box
+                  key={item.label}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    bgcolor: 'rgba(255,255,255,0.15)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 3,
+                    px: 2.5,
+                    py: 1.5,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                  }}
+                >
+                  <Box sx={{ color: '#fff', display: 'flex' }}>{item.icon}</Box>
+                  <Box>
+                    <Typography variant="body2" fontWeight={700}>{item.label}</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>{item.description}</Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Stack>
           </Stack>
         </Box>
 
-        <Grid container spacing={3}>
-          {packages.map((pkg) => (
-            <Grid item xs={12} sm={6} md={4} key={pkg.id}>
-              <Card
-                sx={{
-                  borderRadius: 24,
-                  border: pkg.popular ? '2px solid #ff5f9b' : '1px solid rgba(15,23,42,0.08)',
-                  boxShadow: '0 15px 40px rgba(255, 95, 155, 0.15)',
-                }}
-              >
-                <CardContent>
-                  <Stack spacing={1} mb={2}>
-                    <Typography variant="subtitle1" color="text.secondary">
-                      {pkg.name}
-                    </Typography>
-                    <Typography variant="h5" fontWeight={700}>
-                      {pkg.tokens.toLocaleString()} 토큰
-                    </Typography>
-                    <Typography variant="h6" color="#ff5f9b" fontWeight={600}>
-                      {pkg.price.toLocaleString()}원
-                    </Typography>
-                  </Stack>
-                  {pkg.bonus && (
-                    <Chip
-                      label={`${pkg.bonus} 토큰 보너스`}
-                      color="secondary"
-                      sx={{ mb: 2, borderRadius: 8 }}
-                    />
-                  )}
-                  <Button
-                    fullWidth
-                    variant={pkg.popular ? 'contained' : 'outlined'}
-                    color="secondary"
-                    sx={{ borderRadius: 999, py: 1.5 }}
-                    onClick={() => handleBuyTokens(pkg)}
-                    disabled={paymentLoading}
-                  >
-                    {pkg.popular ? '최고 인기' : '구매하기'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        {/* 토큰 패키지 섹션 */}
+        <Box sx={{ mb: 6 }}>
+          <Stack direction="row" alignItems="center" spacing={1} mb={3}>
+            <TokenIcon sx={{ color: '#ff5f9b' }} />
+            <Typography variant="h6" fontWeight={700}>
+              토큰 패키지
+            </Typography>
+          </Stack>
 
-        <Box sx={{ mt: 6 }}>
-          <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 24, background: '#fff5fb' }}>
-            <Typography variant="h5" fontWeight={700} gutterBottom>
-              구독 서비스
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              매달 자동으로 토큰이 충전되며, 특별 보상 캐릭터와 수익 혜택이 제공됩니다.
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              {subscriptionPlans.map((plan) => (
-                <Grid item xs={12} sm={4} key={plan.id}>
-                  <Paper
-                    variant={selectedPlan === plan.id ? 'outlined' : undefined}
+          <Grid container spacing={3}>
+            {packages.map((pkg, index) => (
+              <Grid item xs={12} sm={6} md={4} key={pkg.id}>
+                <Grow in timeout={300 + index * 100}>
+                  <Card
                     sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      borderColor: selectedPlan === plan.id ? '#ff5f9b' : undefined,
-                      cursor: 'pointer',
+                      borderRadius: 5,
+                      border: pkg.popular ? '3px solid #ff5f9b' : '1px solid rgba(255, 95, 155, 0.15)',
+                      boxShadow: pkg.popular
+                        ? '0 15px 50px rgba(255, 95, 155, 0.25)'
+                        : '0 4px 20px rgba(0,0,0,0.06)',
+                      position: 'relative',
+                      overflow: 'visible',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transform: pkg.popular ? 'scale(1.02)' : 'scale(1)',
+                      '&:hover': {
+                        transform: pkg.popular ? 'scale(1.05) translateY(-8px)' : 'scale(1.02) translateY(-8px)',
+                        boxShadow: '0 20px 50px rgba(255, 95, 155, 0.3)',
+                      },
                     }}
-                    onClick={() => setSelectedPlan(plan.id as typeof selectedPlan)}
                   >
-                    <Typography variant="subtitle1" fontWeight={700}>
-                      {plan.name}
-                    </Typography>
-                    <Typography variant="h6" color="#ff5f9b" fontWeight={700}>
-                      {plan.price.toLocaleString()}원
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {plan.tokens.toLocaleString()} 토큰/월
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {plan.description}
-                    </Typography>
-                  </Paper>
-                </Grid>
-              ))}
-            </Grid>
-            <Button variant="contained" color="secondary" sx={{ borderRadius: 999 }} onClick={handleOpenDialog}>
-              선택한 플랜으로 구독 시작하기
-            </Button>
-          </Paper>
+                    {/* 인기 배지 */}
+                    {pkg.popular && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: -12,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          bgcolor: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)',
+                          background: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)',
+                          color: '#fff',
+                          px: 3,
+                          py: 0.75,
+                          borderRadius: 2,
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          boxShadow: '0 4px 15px rgba(255, 95, 155, 0.4)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          animation: `${pulse} 2s infinite`,
+                        }}
+                      >
+                        <StarIcon sx={{ fontSize: 14 }} /> BEST
+                      </Box>
+                    )}
+
+                    <CardContent sx={{ p: 3, pt: pkg.popular ? 4 : 3 }}>
+                      {/* 패키지 이름 */}
+                      <Typography variant="overline" color="text.secondary" fontWeight={600}>
+                        {pkg.name}
+                      </Typography>
+
+                      {/* 토큰 수량 */}
+                      <Stack direction="row" alignItems="baseline" spacing={1} mb={1}>
+                        <Typography variant="h3" fontWeight={800} color={pkg.popular ? '#ff5f9b' : 'text.primary'}>
+                          {pkg.tokens.toLocaleString()}
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary" fontWeight={500}>
+                          토큰
+                        </Typography>
+                      </Stack>
+
+                      {/* 가격 */}
+                      <Typography variant="h5" fontWeight={700} color="#ff5f9b" mb={1}>
+                        ₩{pkg.price.toLocaleString()}
+                      </Typography>
+
+                      {/* 토큰당 가격 */}
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                        토큰당 약 {getPerTokenPrice(pkg)}원
+                      </Typography>
+
+                      {/* 보너스 */}
+                      {pkg.bonus && (
+                        <Chip
+                          icon={<StarIcon sx={{ fontSize: 14, color: '#ff5f9b !important' }} />}
+                          label={`+${pkg.bonus.toLocaleString()} 보너스`}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(255, 95, 155, 0.1)',
+                            color: '#c3006e',
+                            fontWeight: 600,
+                            mb: 2,
+                            width: '100%',
+                            justifyContent: 'center',
+                          }}
+                        />
+                      )}
+
+                      {/* 구매 버튼 */}
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={() => handleBuyTokens(pkg)}
+                        disabled={paymentLoading}
+                        sx={{
+                          borderRadius: 3,
+                          py: 1.5,
+                          fontWeight: 700,
+                          background: pkg.popular
+                            ? 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)'
+                            : 'transparent',
+                          color: pkg.popular ? '#fff' : '#ff5f9b',
+                          border: pkg.popular ? 'none' : '2px solid #ff5f9b',
+                          boxShadow: pkg.popular ? '0 4px 15px rgba(255, 95, 155, 0.35)' : 'none',
+                          '&:hover': {
+                            background: pkg.popular
+                              ? 'linear-gradient(135deg, #ff4d8d 0%, #ff7fa0 100%)'
+                              : 'rgba(255, 95, 155, 0.08)',
+                          },
+                        }}
+                      >
+                        {paymentLoading && selectedPackage?.id === pkg.id ? (
+                          <CircularProgress size={24} sx={{ color: pkg.popular ? '#fff' : '#ff5f9b' }} />
+                        ) : (
+                          '구매하기'
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </Grow>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
 
-        <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-          <DialogTitle>구독 설정</DialogTitle>
-          <DialogContent>
-            <Typography variant="body2">
-              카드 결제 정보를 등록하면 매월 자동으로 {packages[0]?.tokens || '정해진'} 토큰이 충전됩니다.
+        {/* 구독 서비스 섹션 */}
+        <Box sx={{ mb: 6 }}>
+          <Stack direction="row" alignItems="center" spacing={1} mb={3}>
+            <AutorenewIcon sx={{ color: '#ff5f9b' }} />
+            <Typography variant="h6" fontWeight={700}>
+              월간 구독 플랜
             </Typography>
+            <Chip
+              label="매월 자동 충전"
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255, 95, 155, 0.1)',
+                color: '#c3006e',
+                fontWeight: 600,
+              }}
+            />
+          </Stack>
+
+          <Grid container spacing={3}>
+            {subscriptionPlans.map((plan, index) => {
+              const isSelected = selectedPlan === plan.id;
+              const isStandard = plan.id === 'standard';
+
+              return (
+                <Grid item xs={12} sm={4} key={plan.id}>
+                  <Grow in timeout={400 + index * 100}>
+                    <Card
+                      onClick={() => setSelectedPlan(plan.id as typeof selectedPlan)}
+                      sx={{
+                        borderRadius: 5,
+                        border: isSelected
+                          ? '3px solid #ff5f9b'
+                          : isStandard
+                            ? '2px solid rgba(255, 95, 155, 0.3)'
+                            : '1px solid rgba(255, 95, 155, 0.1)',
+                        boxShadow: isSelected
+                          ? '0 15px 50px rgba(255, 95, 155, 0.25)'
+                          : '0 4px 20px rgba(0,0,0,0.06)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        overflow: 'visible',
+                        transition: 'all 0.3s ease',
+                        transform: isStandard ? 'scale(1.02)' : 'scale(1)',
+                        '&:hover': {
+                          transform: 'scale(1.03) translateY(-5px)',
+                          boxShadow: '0 15px 40px rgba(255, 95, 155, 0.2)',
+                        },
+                      }}
+                    >
+                      {/* 추천 배지 */}
+                      {isStandard && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -12,
+                            right: 16,
+                            bgcolor: '#10b981',
+                            color: '#fff',
+                            px: 2,
+                            py: 0.5,
+                            borderRadius: 2,
+                            fontWeight: 700,
+                            fontSize: '0.7rem',
+                            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                          }}
+                        >
+                          추천
+                        </Box>
+                      )}
+
+                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                        {/* 플랜 이름 */}
+                        <Typography variant="h6" fontWeight={700} gutterBottom>
+                          {plan.name}
+                        </Typography>
+
+                        {/* 가격 */}
+                        <Stack direction="row" alignItems="baseline" justifyContent="center" spacing={0.5} mb={1}>
+                          <Typography variant="h4" fontWeight={800} color="#ff5f9b">
+                            ₩{plan.price.toLocaleString()}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            /월
+                          </Typography>
+                        </Stack>
+
+                        {/* 토큰 수 */}
+                        <Box
+                          sx={{
+                            bgcolor: 'rgba(255, 95, 155, 0.08)',
+                            borderRadius: 3,
+                            py: 1.5,
+                            px: 2,
+                            mb: 2,
+                          }}
+                        >
+                          <Typography variant="h5" fontWeight={700} color="#c3006e">
+                            {plan.tokens.toLocaleString()}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            토큰/월
+                          </Typography>
+                        </Box>
+
+                        {/* 설명 */}
+                        <Typography variant="body2" color="text.secondary" mb={2}>
+                          {plan.description}
+                        </Typography>
+
+                        {/* 혜택 리스트 */}
+                        <Stack spacing={1} mb={2}>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <CheckCircleIcon sx={{ fontSize: 18, color: '#10b981' }} />
+                            <Typography variant="caption">자동 월간 충전</Typography>
+                          </Stack>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <CheckCircleIcon sx={{ fontSize: 18, color: '#10b981' }} />
+                            <Typography variant="caption">언제든 취소 가능</Typography>
+                          </Stack>
+                          {plan.id !== 'basic' && (
+                            <Stack direction="row" alignItems="center" spacing={1}>
+                              <CheckCircleIcon sx={{ fontSize: 18, color: '#10b981' }} />
+                              <Typography variant="caption">우선 고객 지원</Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+
+                        {/* 선택 표시 */}
+                        {isSelected && (
+                          <Chip
+                            icon={<CheckCircleIcon sx={{ color: '#fff !important', fontSize: 16 }} />}
+                            label="선택됨"
+                            sx={{
+                              bgcolor: '#ff5f9b',
+                              color: '#fff',
+                              fontWeight: 600,
+                            }}
+                          />
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Grow>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          {/* 구독 시작 버튼 */}
+          <Box sx={{ textAlign: 'center', mt: 4 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleOpenDialog}
+              sx={{
+                borderRadius: 4,
+                px: 6,
+                py: 2,
+                fontWeight: 700,
+                fontSize: '1rem',
+                background: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)',
+                boxShadow: '0 8px 25px rgba(255, 95, 155, 0.35)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #ff4d8d 0%, #ff7fa0 100%)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 30px rgba(255, 95, 155, 0.4)',
+                },
+              }}
+            >
+              {subscriptionPlans.find((p) => p.id === selectedPlan)?.name} 플랜으로 구독 시작하기
+            </Button>
+          </Box>
+        </Box>
+
+        {/* 보안 및 신뢰 배지 */}
+        <Box
+          sx={{
+            bgcolor: 'rgba(255, 95, 155, 0.03)',
+            borderRadius: 4,
+            p: 4,
+            textAlign: 'center',
+            border: '1px solid rgba(255, 95, 155, 0.1)',
+          }}
+        >
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            안전하고 신뢰할 수 있는 결제
+          </Typography>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={3}
+            justifyContent="center"
+            alignItems="center"
+          >
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <LockIcon sx={{ color: '#10b981', fontSize: 20 }} />
+              <Typography variant="body2" fontWeight={600}>SSL 보안 결제</Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <VerifiedUserIcon sx={{ color: '#3b82f6', fontSize: 20 }} />
+              <Typography variant="body2" fontWeight={600}>토스페이먼츠 인증</Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <CreditCardIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+              <Typography variant="body2" fontWeight={600}>카드 정보 암호화</Typography>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* 구독 확인 다이얼로그 */}
+        <Dialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          PaperProps={{
+            sx: { borderRadius: 4, maxWidth: 400 },
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 700, textAlign: 'center', pt: 4 }}>
+            구독을 시작하시겠습니까?
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255, 95, 155, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mx: 'auto',
+                  mb: 2,
+                }}
+              >
+                <CreditCardIcon sx={{ fontSize: 32, color: '#ff5f9b' }} />
+              </Box>
+              <Typography variant="h6" fontWeight={700} gutterBottom>
+                {subscriptionPlans.find((p) => p.id === selectedPlan)?.name} 플랜
+              </Typography>
+              <Typography variant="h5" fontWeight={800} color="#ff5f9b" gutterBottom>
+                월 ₩{subscriptionPlans.find((p) => p.id === selectedPlan)?.price.toLocaleString()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                매월 {subscriptionPlans.find((p) => p.id === selectedPlan)?.tokens.toLocaleString()}개의 토큰이 자동으로 충전됩니다.
+              </Typography>
+            </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>취소</Button>
-            <Button variant="contained" color="secondary" onClick={handleSubscription}>
-              연동하기
+          <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
+            <Button
+              onClick={handleCloseDialog}
+              sx={{ flex: 1, borderRadius: 3, py: 1.5 }}
+            >
+              취소
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleSubscription}
+              sx={{
+                flex: 1,
+                borderRadius: 3,
+                py: 1.5,
+                background: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)',
+                fontWeight: 700,
+              }}
+            >
+              결제 정보 등록
             </Button>
           </DialogActions>
         </Dialog>
