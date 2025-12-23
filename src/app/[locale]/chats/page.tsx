@@ -39,7 +39,7 @@ interface ChatListItem {
 
 export default function ChatsPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, openLoginModal } = useAuth();
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [filteredChats, setFilteredChats] = useState<ChatListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,9 +97,10 @@ export default function ChatsPage() {
     if (isAuthenticated) {
       fetchChats();
     } else {
-      router.push('/login?redirect=/chats');
+      openLoginModal('채팅 목록을 보려면 로그인이 필요해요', '/chats');
+      setIsLoading(false);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, openLoginModal]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -142,6 +143,38 @@ export default function ChatsPage() {
       return format(date, 'yyyy.MM.dd', { locale: ko });
     }
   };
+
+  if (!isAuthenticated) {
+    return (
+      <PageLayout>
+        <Box sx={{ textAlign: 'center', py: 8, px: 3 }}>
+          <Typography variant="h5" fontWeight="bold" gutterBottom>
+            로그인이 필요합니다
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            채팅 목록을 보려면 로그인해주세요.
+          </Typography>
+          <Paper
+            elevation={3}
+            sx={{
+              py: 1.5,
+              px: 3,
+              borderRadius: 5,
+              bgcolor: '#ff5e62',
+              color: 'white',
+              display: 'inline-block',
+              cursor: 'pointer'
+            }}
+            onClick={() => openLoginModal('채팅 목록을 보려면 로그인이 필요해요', '/chats')}
+          >
+            <Typography variant="body2" fontWeight="medium">
+              로그인하기
+            </Typography>
+          </Paper>
+        </Box>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>

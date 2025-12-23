@@ -196,8 +196,8 @@ export default function LoginPage() {
               />
 
               <Box sx={{ textAlign: 'right', mt: -1 }}>
-                <Link href="/forgot-password" passHref>
-                  <MuiLink sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
+                <Link href="/forgot-password" passHref legacyBehavior>
+                  <MuiLink component="a" sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
                     비밀번호를 잊으셨나요?
                   </MuiLink>
                 </Link>
@@ -278,8 +278,8 @@ export default function LoginPage() {
 
               <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 계정이 없으신가요?{' '}
-                <Link href="/register" passHref>
-                  <MuiLink sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                <Link href="/register" passHref legacyBehavior>
+                  <MuiLink component="a" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                     회원가입하기
                   </MuiLink>
                 </Link>

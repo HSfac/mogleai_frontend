@@ -80,4 +80,17 @@ export const characterService = {
     const response = await api.post('/characters/analyze-image', { imageUrl });
     return response.data;
   },
+
+  // AI로 특정 필드 생성
+  async generateFieldWithAI(fieldName: string, context: {
+    name?: string;
+    description?: string;
+    personality?: string;
+    category?: string;
+    species?: string;
+    role?: string;
+  }) {
+    const response = await api.post('/characters/generate-field', { fieldName, context });
+    return response.data;
+  },
 };

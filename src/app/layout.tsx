@@ -8,6 +8,16 @@ export const metadata = {
   title: '몽글챗 - AI 캐릭터 챗봇 서비스',
   description: '나만의 AI 캐릭터를 만들고 대화해보세요!',
   metadataBase: new URL('https://mongl.ai'),
+  icons: {
+    icon: [
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   openGraph: {
     title: '몽글챗 - AI 캐릭터 챗봇 서비스',
     description: '나만의 AI 캐릭터를 만들고 대화해보세요!',

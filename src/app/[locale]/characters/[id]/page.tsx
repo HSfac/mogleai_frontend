@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import PageLayout from '@/components/PageLayout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
@@ -43,7 +44,7 @@ import PresetManager from '@/components/preset/PresetManager';
 
 export default function CharacterDetailPage({ params }) {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, requireAuth } = useAuth();
   const [character, setCharacter] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
@@ -78,46 +79,40 @@ export default function CharacterDetailPage({ params }) {
     }
   }, [params.id, isAuthenticated, user]);
 
-  const handleLike = async () => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
+  const handleLike = () => {
+    requireAuth(async () => {
+      try {
+        await api.post(`/characters/${params.id}/like`);
 
-    try {
-      await api.post(`/characters/${params.id}/like`);
+        setIsLiked(!isLiked);
+        setCharacter((prev: any) => ({
+          ...prev,
+          likes: isLiked ? prev.likes - 1 : prev.likes + 1
+        }));
 
-      setIsLiked(!isLiked);
-      setCharacter((prev: any) => ({
-        ...prev,
-        likes: isLiked ? prev.likes - 1 : prev.likes + 1
-      }));
-
-      setSuccessMessage(isLiked ? '좋아요를 취소했습니다.' : '좋아요를 추가했습니다.');
-    } catch (error: any) {
-      console.error('좋아요 처리 중 오류가 발생했습니다:', error);
-      setError('좋아요 처리 중 오류가 발생했습니다.');
-    }
+        setSuccessMessage(isLiked ? '좋아요를 취소했습니다.' : '좋아요를 추가했습니다.');
+      } catch (error: any) {
+        console.error('좋아요 처리 중 오류가 발생했습니다:', error);
+        setError('좋아요 처리 중 오류가 발생했습니다.');
+      }
+    }, '좋아요를 누르려면 로그인이 필요해요');
   };
 
-  const handleStartChat = async () => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const aiModel = character?.defaultAIModel || 'gpt4';
-      const newChat = await chatService.createChat({
-        characterId: params.id,
-        aiModel,
-        presetId: selectedPresetId,
-      });
-      router.push(`/chat/${newChat._id}`);
-    } catch (startError) {
-      console.error('채팅 생성 중 오류:', startError);
-      setError('채팅을 시작할 수 없습니다. 잠시 후 다시 시도해주세요.');
-    }
+  const handleStartChat = () => {
+    requireAuth(async () => {
+      try {
+        const aiModel = character?.defaultAIModel || 'gpt4';
+        const newChat = await chatService.createChat({
+          characterId: params.id,
+          aiModel,
+          presetId: selectedPresetId,
+        });
+        router.push(`/chat/${newChat._id}`);
+      } catch (startError) {
+        console.error('채팅 생성 중 오류:', startError);
+        setError('채팅을 시작할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }, '대화를 시작하려면 로그인이 필요해요');
   };
 
   const handleEdit = () => {

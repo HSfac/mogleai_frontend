@@ -806,7 +806,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, openLoginModal } = useAuth();
   const [chat, setChat] = useState<Chat | null>(null);
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -814,7 +814,8 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=/chat/${id}`);
+      openLoginModal('채팅을 이용하려면 로그인이 필요해요', `/chat/${id}`);
+      setIsLoading(false);
       return;
     }
 
@@ -834,7 +835,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     };
 
     fetchData();
-  }, [id, isAuthenticated, router]);
+  }, [id, isAuthenticated, router, openLoginModal]);
 
   if (isLoading) {
     return (
@@ -842,6 +843,30 @@ export default function ChatPage({ params }: { params: { id: string } }) {
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="70vh">
           <CircularProgress sx={{ color: '#ff5f9b' }} />
         </Box>
+      </PageLayout>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <PageLayout>
+        <Container maxWidth="sm" sx={{ py: 8 }}>
+          <Card sx={{ borderRadius: 3, textAlign: 'center', p: 4, bgcolor: '#1a1a2e' }}>
+            <Typography variant="h5" fontWeight={700} sx={{ color: '#fff' }}>
+              로그인이 필요합니다
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mt: 2 }}>
+              채팅을 이용하려면 로그인이 필요해요.
+            </Typography>
+            <Button
+              variant="contained"
+              sx={{ mt: 3, bgcolor: '#ff5f9b' }}
+              onClick={() => openLoginModal('채팅을 이용하려면 로그인이 필요해요', `/chat/${id}`)}
+            >
+              로그인하기
+            </Button>
+          </Card>
+        </Container>
       </PageLayout>
     );
   }

@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { authService } from '@/services/authService';
 import { userService } from '@/services/userService';
 import { useRouter } from 'next/navigation';
+import LoginModal from '@/components/auth/LoginModal';
 
 interface User {
   _id: string;
@@ -29,6 +30,11 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   token: string | null;
+  // 새로운 함수들
+  openLoginModal: (message?: string, redirectAfterLogin?: string) => void;
+  closeLoginModal: () => void;
+  requireAuth: (action: () => void, message?: string) => void;
+  requireAuthAsync: <T>(action: () => Promise<T>, message?: string) => Promise<T | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,17 +45,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
 
+  // 로그인 모달 상태
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [loginModalMessage, setLoginModalMessage] = useState('');
+  const [loginModalRedirect, setLoginModalRedirect] = useState<string | undefined>();
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = authService.getToken();
-      if (token) {
-        setToken(token);
+      const storedToken = authService.getToken();
+      if (storedToken) {
+        setToken(storedToken);
         fetchUser();
       } else {
         setLoading(false);
       }
     }
   }, []);
+
+  // 로그인 성공 후 대기중인 액션 실행
+  useEffect(() => {
+    if (user && pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  }, [user, pendingAction]);
 
   const fetchUser = async () => {
     try {
@@ -70,7 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.login(email, password);
       setToken(authService.getToken());
       await fetchUser();
-      router.push('/');
+      // 모달에서 로그인한 경우 리다이렉트하지 않음
+      if (!loginModalOpen) {
+        router.push('/');
+      }
     } catch (error) {
       setLoading(false);
       throw error;
@@ -83,7 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authService.register(email, password, username);
       setToken(authService.getToken());
       await fetchUser();
-      router.push('/');
+      // 모달에서 회원가입한 경우 리다이렉트하지 않음
+      if (!loginModalOpen) {
+        router.push('/');
+      }
     } catch (error) {
       setLoading(false);
       throw error;
@@ -94,12 +120,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.logout();
     setUser(null);
     setToken(null);
-    router.push('/login');
+    router.push('/');
   };
 
   const refreshUser = async () => {
     await fetchUser();
   };
+
+  // 로그인 모달 열기
+  const openLoginModal = useCallback((message?: string, redirectAfterLogin?: string) => {
+    setLoginModalMessage(message || '이 기능을 이용하려면 로그인이 필요해요');
+    setLoginModalRedirect(redirectAfterLogin);
+    setLoginModalOpen(true);
+  }, []);
+
+  // 로그인 모달 닫기
+  const closeLoginModal = useCallback(() => {
+    setLoginModalOpen(false);
+    setLoginModalMessage('');
+    setLoginModalRedirect(undefined);
+  }, []);
+
+  // 인증이 필요한 액션 실행 (동기)
+  const requireAuth = useCallback((action: () => void, message?: string) => {
+    if (user) {
+      action();
+    } else {
+      setPendingAction(() => action);
+      openLoginModal(message);
+    }
+  }, [user, openLoginModal]);
+
+  // 인증이 필요한 액션 실행 (비동기)
+  const requireAuthAsync = useCallback(async <T,>(action: () => Promise<T>, message?: string): Promise<T | null> => {
+    if (user) {
+      return await action();
+    } else {
+      openLoginModal(message);
+      return null;
+    }
+  }, [user, openLoginModal]);
 
   return (
     <AuthContext.Provider
@@ -112,9 +172,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshUser,
         isAuthenticated: !!user,
         token,
+        openLoginModal,
+        closeLoginModal,
+        requireAuth,
+        requireAuthAsync,
       }}
     >
       {children}
+      {/* 전역 로그인 모달 */}
+      <LoginModal
+        open={loginModalOpen}
+        onClose={closeLoginModal}
+        message={loginModalMessage}
+        redirectAfterLogin={loginModalRedirect}
+      />
     </AuthContext.Provider>
   );
 }
@@ -125,4 +196,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-} 
+}

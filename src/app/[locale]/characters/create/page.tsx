@@ -27,16 +27,44 @@ import {
   Switch,
   Card,
   CardContent,
+  IconButton,
+  Tooltip,
+  Autocomplete,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputAdornment,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SaveIcon from '@mui/icons-material/Save';
 import PreviewIcon from '@mui/icons-material/Preview';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import LockIcon from '@mui/icons-material/Lock';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { characterService } from '@/services/character.service';
 import { worldService } from '@/services/worldService';
 import { World } from '@/types/world';
+
+// 드롭다운 옵션들
+const SPECIES_OPTIONS = [
+  '인간', '엘프', '뱀파이어', '천사', '악마', '로봇/AI', '수인', '드래곤',
+  '요정', '마법사', '늑대인간', '인어', '고양이', '외계인', '신', '정령'
+];
+
+const ROLE_OPTIONS = [
+  '친구', '연인', '비서/조수', '선생님', '학생', '의사', '탐정',
+  '요리사', '왕/여왕', '기사', '마법사', '과학자', '예술가', '운동선수',
+  '가수/아이돌', '작가', '사업가', '모험가', '보호자', '라이벌'
+];
+
+const AGE_OPTIONS = [
+  '10대 초반', '10대 중반', '10대 후반', '20대 초반', '20대 중반', '20대 후반',
+  '30대', '40대', '50대 이상', '나이 불명', '영원한 17세', '수백 살', '수천 살'
+];
 
 export default function CreateCharacterPage() {
   const router = useRouter();
@@ -89,6 +117,12 @@ export default function CreateCharacterPage() {
 
   // AI 이미지 분석
   const [analyzingImage, setAnalyzingImage] = useState(false);
+
+  // AI 필드 생성
+  const [generatingField, setGeneratingField] = useState<string | null>(null);
+
+  // 19세 인증 다이얼로그
+  const [adultVerifyDialogOpen, setAdultVerifyDialogOpen] = useState(false);
 
   // 인증 확인
   if (!isAuthenticated) {
@@ -256,6 +290,87 @@ export default function CreateCharacterPage() {
     }
   };
 
+  // AI로 특정 필드 생성
+  const handleGenerateField = async (fieldName: string) => {
+    setGeneratingField(fieldName);
+    setError('');
+
+    try {
+      const context = {
+        name: formData.name,
+        description: formData.description,
+        personality: formData.personality,
+        category: formData.category,
+        species: formData.species,
+        role: formData.role,
+      };
+
+      const result = await characterService.generateFieldWithAI(fieldName, context);
+
+      if (result.success && result.data) {
+        const value = result.data;
+
+        // 필드 타입에 따라 업데이트
+        if (Array.isArray(value)) {
+          setFormData(prev => ({ ...prev, [fieldName]: value }));
+        } else {
+          setFormData(prev => ({ ...prev, [fieldName]: value }));
+        }
+
+        setSuccess(`AI가 ${getFieldLabel(fieldName)}을(를) 생성했습니다!`);
+      } else {
+        setError(result.error || 'AI 생성에 실패했습니다.');
+      }
+    } catch (err: any) {
+      console.error('AI 생성 실패:', err);
+      setError('AI 생성 중 오류가 발생했습니다.');
+    } finally {
+      setGeneratingField(null);
+    }
+  };
+
+  // 필드 레이블 가져오기
+  const getFieldLabel = (fieldName: string): string => {
+    const labels: Record<string, string> = {
+      name: '이름',
+      description: '설명',
+      personality: '성격',
+      speakingStyle: '말투',
+      greeting: '인사말',
+      scenario: '시나리오',
+      appearance: '외모',
+      backgroundStory: '배경 스토리',
+      personalityCore: '핵심 성격',
+      characterLikes: '좋아하는 것',
+      characterDislikes: '싫어하는 것',
+      tags: '태그',
+    };
+    return labels[fieldName] || fieldName;
+  };
+
+  // AI 생성 버튼 컴포넌트
+  const AIGenerateButton = ({ fieldName, disabled = false }: { fieldName: string; disabled?: boolean }) => (
+    <Tooltip title={`AI로 ${getFieldLabel(fieldName)} 생성하기`}>
+      <span>
+        <IconButton
+          size="small"
+          onClick={() => handleGenerateField(fieldName)}
+          disabled={disabled || generatingField === fieldName}
+          sx={{
+            color: '#9c27b0',
+            '&:hover': { bgcolor: 'rgba(156, 39, 176, 0.08)' },
+          }}
+        >
+          {generatingField === fieldName ? (
+            <CircularProgress size={18} sx={{ color: '#9c27b0' }} />
+          ) : (
+            <AutoAwesomeIcon fontSize="small" />
+          )}
+        </IconButton>
+      </span>
+    </Tooltip>
+  );
+
   // 폼 검증
   const validateForm = (): boolean => {
     if (!formData.name.trim()) {
@@ -369,50 +484,78 @@ export default function CreateCharacterPage() {
                     placeholder="예: 친절한 AI 비서"
                     helperText={`${formData.name.length}/30자`}
                     inputProps={{ maxLength: 30 }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <AIGenerateButton fieldName="name" />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
 
                   {/* 캐릭터 설명 (짧은 소개) */}
-                  <TextField
-                    required
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="캐릭터 설명 (짧은 소개)"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    placeholder="캐릭터를 간단히 소개해주세요. 사용자들이 검색할 때 보이는 설명입니다."
-                    helperText={`${formData.description.length}/200자`}
-                    inputProps={{ maxLength: 200 }}
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        캐릭터 설명 (짧은 소개) *
+                      </Typography>
+                      <AIGenerateButton fieldName="description" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      required
+                      fullWidth
+                      multiline
+                      rows={3}
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="캐릭터를 간단히 소개해주세요. 사용자들이 검색할 때 보이는 설명입니다."
+                      helperText={`${formData.description.length}/200자`}
+                      inputProps={{ maxLength: 200 }}
+                    />
+                  </Box>
 
                   {/* 캐릭터 성격 (시스템 프롬프트) */}
-                  <TextField
-                    required
-                    fullWidth
-                    multiline
-                    rows={6}
-                    label="캐릭터 성격 (상세 설정)"
-                    name="personality"
-                    value={formData.personality}
-                    onChange={handleChange}
-                    placeholder="캐릭터의 성격, 배경, 특징 등을 자세히 설명해주세요. AI가 이 정보를 바탕으로 대화합니다.&#10;&#10;예시:&#10;- 당신은 친절하고 전문적인 AI 비서입니다.&#10;- 항상 공손하고 예의 바른 태도로 답변합니다.&#10;- 사용자의 질문에 명확하고 정확하게 답변하려고 노력합니다.&#10;- 어려운 전문 용어는 쉽게 풀어서 설명합니다."
-                    helperText={`최소 20자 이상 입력해주세요 (현재: ${formData.personality.length}자)`}
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        캐릭터 성격 (상세 설정) *
+                      </Typography>
+                      <AIGenerateButton fieldName="personality" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      required
+                      fullWidth
+                      multiline
+                      rows={6}
+                      name="personality"
+                      value={formData.personality}
+                      onChange={handleChange}
+                      placeholder="캐릭터의 성격, 배경, 특징 등을 자세히 설명해주세요. AI가 이 정보를 바탕으로 대화합니다.&#10;&#10;예시:&#10;- 당신은 친절하고 전문적인 AI 비서입니다.&#10;- 항상 공손하고 예의 바른 태도로 답변합니다.&#10;- 사용자의 질문에 명확하고 정확하게 답변하려고 노력합니다.&#10;- 어려운 전문 용어는 쉽게 풀어서 설명합니다."
+                      helperText={`최소 20자 이상 입력해주세요 (현재: ${formData.personality.length}자)`}
+                    />
+                  </Box>
 
                   {/* 말투 */}
-                  <TextField
-                    required
-                    fullWidth
-                    multiline
-                    rows={4}
-                    label="말투 및 대화 스타일"
-                    name="speakingStyle"
-                    value={formData.speakingStyle}
-                    onChange={handleChange}
-                    placeholder="캐릭터가 어떻게 말하는지 설명해주세요.&#10;&#10;예시:&#10;- 존댓말을 사용하며 정중하게 대화합니다.&#10;- 이모티콘을 적절히 사용해 친근하게 다가갑니다. 😊&#10;- 문장은 간결하고 명확하게 작성합니다.&#10;- 전문적이면서도 따뜻한 어조를 유지합니다."
-                    helperText={`최소 20자 이상 입력해주세요 (현재: ${formData.speakingStyle.length}자)`}
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        말투 및 대화 스타일 *
+                      </Typography>
+                      <AIGenerateButton fieldName="speakingStyle" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      required
+                      fullWidth
+                      multiline
+                      rows={4}
+                      name="speakingStyle"
+                      value={formData.speakingStyle}
+                      onChange={handleChange}
+                      placeholder="캐릭터가 어떻게 말하는지 설명해주세요.&#10;&#10;예시:&#10;- 존댓말을 사용하며 정중하게 대화합니다.&#10;- 이모티콘을 적절히 사용해 친근하게 다가갑니다. 😊&#10;- 문장은 간결하고 명확하게 작성합니다.&#10;- 전문적이면서도 따뜻한 어조를 유지합니다."
+                      helperText={`최소 20자 이상 입력해주세요 (현재: ${formData.speakingStyle.length}자)`}
+                    />
+                  </Box>
 
                   {/* AI 모델 선택 */}
                   <FormControl fullWidth>
@@ -476,129 +619,211 @@ export default function CreateCharacterPage() {
                   </FormControl>
 
                   {/* 첫 인사말 */}
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={2}
-                    label="첫 인사말 (Greeting)"
-                    name="greeting"
-                    value={formData.greeting}
-                    onChange={handleChange}
-                    placeholder="사용자가 대화를 시작할 때 캐릭터가 먼저 건네는 인사말입니다.&#10;예: 안녕하세요! 무엇을 도와드릴까요? 😊"
-                    helperText="비워두면 기본 인사말이 사용됩니다"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        첫 인사말 (Greeting)
+                      </Typography>
+                      <AIGenerateButton fieldName="greeting" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={2}
+                      name="greeting"
+                      value={formData.greeting}
+                      onChange={handleChange}
+                      placeholder="사용자가 대화를 시작할 때 캐릭터가 먼저 건네는 인사말입니다.&#10;예: 안녕하세요! 무엇을 도와드릴까요? 😊"
+                      helperText="비워두면 기본 인사말이 사용됩니다"
+                    />
+                  </Box>
 
                   {/* 시나리오/배경 */}
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="시나리오 / 배경 설정"
-                    name="scenario"
-                    value={formData.scenario}
-                    onChange={handleChange}
-                    placeholder="캐릭터가 어떤 상황/환경에 있는지 설명해주세요.&#10;&#10;예:&#10;- 현대 도시의 카페에서 일하는 바리스타&#10;- 판타지 세계의 마법 학교 교수&#10;- 우주 정거장의 AI 시스템"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        시나리오 / 배경 설정
+                      </Typography>
+                      <AIGenerateButton fieldName="scenario" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      name="scenario"
+                      value={formData.scenario}
+                      onChange={handleChange}
+                      placeholder="캐릭터가 어떤 상황/환경에 있는지 설명해주세요.&#10;&#10;예:&#10;- 현대 도시의 카페에서 일하는 바리스타&#10;- 판타지 세계의 마법 학교 교수&#10;- 우주 정거장의 AI 시스템"
+                    />
+                  </Box>
 
                   <Divider sx={{ my: 2 }}>캐릭터 상세 정보</Divider>
 
                   {/* 캐릭터 기본 정보 그리드 */}
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
-                      <TextField
-                        fullWidth
-                        label="표시 나이"
-                        name="ageDisplay"
+                      <Autocomplete
+                        freeSolo
+                        options={AGE_OPTIONS}
                         value={formData.ageDisplay}
-                        onChange={handleChange}
-                        placeholder="예: 25세, 영원한 17세"
+                        onChange={(e, newValue) => {
+                          setFormData(prev => ({ ...prev, ageDisplay: newValue || '' }));
+                        }}
+                        onInputChange={(e, newInputValue) => {
+                          setFormData(prev => ({ ...prev, ageDisplay: newInputValue }));
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            label="표시 나이"
+                            placeholder="선택하거나 직접 입력"
+                          />
+                        )}
                       />
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <TextField
-                        fullWidth
-                        label="종족"
-                        name="species"
+                      <Autocomplete
+                        freeSolo
+                        options={SPECIES_OPTIONS}
                         value={formData.species}
-                        onChange={handleChange}
-                        placeholder="예: 인간, 엘프, AI"
+                        onChange={(e, newValue) => {
+                          setFormData(prev => ({ ...prev, species: newValue || '' }));
+                        }}
+                        onInputChange={(e, newInputValue) => {
+                          setFormData(prev => ({ ...prev, species: newInputValue }));
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            label="종족"
+                            placeholder="선택하거나 직접 입력"
+                          />
+                        )}
                       />
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <TextField
-                        fullWidth
-                        label="역할"
-                        name="role"
+                      <Autocomplete
+                        freeSolo
+                        options={ROLE_OPTIONS}
                         value={formData.role}
-                        onChange={handleChange}
-                        placeholder="예: 조수, 연인, 친구"
+                        onChange={(e, newValue) => {
+                          setFormData(prev => ({ ...prev, role: newValue || '' }));
+                        }}
+                        onInputChange={(e, newInputValue) => {
+                          setFormData(prev => ({ ...prev, role: newInputValue }));
+                        }}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            label="역할"
+                            placeholder="선택하거나 직접 입력"
+                          />
+                        )}
                       />
                     </Grid>
                   </Grid>
 
                   {/* 외모 설명 */}
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="외모 설명"
-                    name="appearance"
-                    value={formData.appearance}
-                    onChange={handleChange}
-                    placeholder="캐릭터의 외모를 설명해주세요.&#10;예: 긴 검은 머리, 파란 눈, 키 170cm, 날씬한 체형..."
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        외모 설명
+                      </Typography>
+                      <AIGenerateButton fieldName="appearance" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      name="appearance"
+                      value={formData.appearance}
+                      onChange={handleChange}
+                      placeholder="캐릭터의 외모를 설명해주세요.&#10;예: 긴 검은 머리, 파란 눈, 키 170cm, 날씬한 체형..."
+                    />
+                  </Box>
 
                   {/* 배경 스토리 */}
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={4}
-                    label="배경 스토리"
-                    name="backgroundStory"
-                    value={formData.backgroundStory}
-                    onChange={handleChange}
-                    placeholder="캐릭터의 과거와 배경 이야기를 작성해주세요.&#10;이 정보는 AI가 캐릭터를 이해하는 데 사용됩니다."
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        배경 스토리
+                      </Typography>
+                      <AIGenerateButton fieldName="backgroundStory" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={4}
+                      name="backgroundStory"
+                      value={formData.backgroundStory}
+                      onChange={handleChange}
+                      placeholder="캐릭터의 과거와 배경 이야기를 작성해주세요.&#10;이 정보는 AI가 캐릭터를 이해하는 데 사용됩니다."
+                    />
+                  </Box>
 
                   {/* 핵심 성격 특성 */}
-                  <TextField
-                    fullWidth
-                    label="핵심 성격 특성 (쉼표로 구분)"
-                    name="personalityCore"
-                    value={formData.personalityCore.join(', ')}
-                    onChange={(e) => {
-                      const traits = e.target.value.split(',').map(t => t.trim()).filter(t => t);
-                      setFormData(prev => ({ ...prev, personalityCore: traits }));
-                    }}
-                    placeholder="예: 쾌활함, 진지함, 호기심, 배려심"
-                    helperText="캐릭터의 핵심 성격을 3-5개 키워드로 입력하세요"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        핵심 성격 특성 (쉼표로 구분)
+                      </Typography>
+                      <AIGenerateButton fieldName="personalityCore" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      name="personalityCore"
+                      value={formData.personalityCore.join(', ')}
+                      onChange={(e) => {
+                        const traits = e.target.value.split(',').map(t => t.trim()).filter(t => t);
+                        setFormData(prev => ({ ...prev, personalityCore: traits }));
+                      }}
+                      placeholder="예: 쾌활함, 진지함, 호기심, 배려심"
+                      helperText="캐릭터의 핵심 성격을 3-5개 키워드로 입력하세요"
+                    />
+                  </Box>
 
                   {/* 좋아하는 것 */}
-                  <TextField
-                    fullWidth
-                    label="좋아하는 것 (쉼표로 구분)"
-                    name="characterLikes"
-                    value={formData.characterLikes.join(', ')}
-                    onChange={(e) => {
-                      const likes = e.target.value.split(',').map(l => l.trim()).filter(l => l);
-                      setFormData(prev => ({ ...prev, characterLikes: likes }));
-                    }}
-                    placeholder="예: 음악, 요리, 산책, 독서"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        좋아하는 것 (쉼표로 구분)
+                      </Typography>
+                      <AIGenerateButton fieldName="characterLikes" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      name="characterLikes"
+                      value={formData.characterLikes.join(', ')}
+                      onChange={(e) => {
+                        const likes = e.target.value.split(',').map(l => l.trim()).filter(l => l);
+                        setFormData(prev => ({ ...prev, characterLikes: likes }));
+                      }}
+                      placeholder="예: 음악, 요리, 산책, 독서"
+                    />
+                  </Box>
 
                   {/* 싫어하는 것 */}
-                  <TextField
-                    fullWidth
-                    label="싫어하는 것 (쉼표로 구분)"
-                    name="characterDislikes"
-                    value={formData.characterDislikes.join(', ')}
-                    onChange={(e) => {
-                      const dislikes = e.target.value.split(',').map(d => d.trim()).filter(d => d);
-                      setFormData(prev => ({ ...prev, characterDislikes: dislikes }));
-                    }}
-                    placeholder="예: 거짓말, 무례함, 지루함"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        싫어하는 것 (쉼표로 구분)
+                      </Typography>
+                      <AIGenerateButton fieldName="characterDislikes" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      name="characterDislikes"
+                      value={formData.characterDislikes.join(', ')}
+                      onChange={(e) => {
+                        const dislikes = e.target.value.split(',').map(d => d.trim()).filter(d => d);
+                        setFormData(prev => ({ ...prev, characterDislikes: dislikes }));
+                      }}
+                      placeholder="예: 거짓말, 무례함, 지루함"
+                    />
+                  </Box>
 
                   {/* 카테고리 */}
                   <FormControl fullWidth>
@@ -623,18 +848,25 @@ export default function CreateCharacterPage() {
                   </FormControl>
 
                   {/* 태그 */}
-                  <TextField
-                    fullWidth
-                    label="태그 (쉼표로 구분)"
-                    name="tags"
-                    value={formData.tags.join(', ')}
-                    onChange={(e) => {
-                      const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
-                      setFormData(prev => ({ ...prev, tags }));
-                    }}
-                    placeholder="예: 친절함, 전문가, AI, 도우미"
-                    helperText="검색 및 필터링에 사용됩니다"
-                  />
+                  <Box>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        태그 (쉼표로 구분)
+                      </Typography>
+                      <AIGenerateButton fieldName="tags" disabled={!formData.name} />
+                    </Stack>
+                    <TextField
+                      fullWidth
+                      name="tags"
+                      value={formData.tags.join(', ')}
+                      onChange={(e) => {
+                        const tags = e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag);
+                        setFormData(prev => ({ ...prev, tags }));
+                      }}
+                      placeholder="예: 친절함, 전문가, AI, 도우미"
+                      helperText="검색 및 필터링에 사용됩니다"
+                    />
+                  </Box>
 
                   {/* 대화 예시 */}
                   <Box>
@@ -731,59 +963,62 @@ export default function CreateCharacterPage() {
                   <Divider sx={{ my: 2 }} />
 
                   {/* 성인 컨텐츠 설정 */}
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.isAdultContent}
-                        onChange={(e) => {
-                          if (e.target.checked && !user?.isAdultVerified) {
-                            setError('성인 컨텐츠 캐릭터를 만들려면 성인 인증이 필요합니다.');
-                            setTimeout(() => {
-                              router.push('/profile');
-                            }, 2000);
-                            return;
-                          }
-                          setFormData(prev => ({ ...prev, isAdultContent: e.target.checked }));
-                        }}
-                        name="isAdultContent"
-                        color="error"
-                        disabled={!user?.isAdultVerified}
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography variant="body1">
-                          성인 컨텐츠 캐릭터 🔞
-                          {!user?.isAdultVerified && (
-                            <Chip
-                              label="성인 인증 필요"
-                              size="small"
-                              color="error"
-                              sx={{ ml: 1 }}
-                            />
-                          )}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          19세 이상만 대화 가능한 캐릭터입니다. 성인 인증이 완료되어야 생성할 수 있습니다.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-
-                  {!user?.isAdultVerified && (
-                    <Alert severity="warning" sx={{ mt: 2 }}>
-                      성인 컨텐츠 캐릭터를 만들려면{' '}
-                      <Button
-                        size="small"
-                        color="inherit"
-                        onClick={() => router.push('/profile')}
-                        sx={{ textDecoration: 'underline' }}
-                      >
-                        프로필 페이지
-                      </Button>
-                      에서 성인 인증을 완료해주세요.
-                    </Alert>
-                  )}
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      borderColor: formData.isAdultContent ? '#f44336' : 'rgba(0,0,0,0.12)',
+                      bgcolor: formData.isAdultContent ? 'rgba(244, 67, 54, 0.04)' : 'transparent',
+                    }}
+                  >
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={formData.isAdultContent}
+                          onChange={(e) => {
+                            if (e.target.checked && !user?.isAdultVerified) {
+                              setAdultVerifyDialogOpen(true);
+                              return;
+                            }
+                            setFormData(prev => ({ ...prev, isAdultContent: e.target.checked }));
+                          }}
+                          name="isAdultContent"
+                          color="error"
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="body1" fontWeight={600}>
+                              성인 컨텐츠 캐릭터
+                            </Typography>
+                            {user?.isAdultVerified ? (
+                              <Chip
+                                icon={<VerifiedUserIcon sx={{ fontSize: 14 }} />}
+                                label="인증 완료"
+                                size="small"
+                                color="success"
+                                sx={{ height: 22 }}
+                              />
+                            ) : (
+                              <Chip
+                                icon={<LockIcon sx={{ fontSize: 14 }} />}
+                                label="인증 필요"
+                                size="small"
+                                color="warning"
+                                sx={{ height: 22, cursor: 'pointer' }}
+                                onClick={() => setAdultVerifyDialogOpen(true)}
+                              />
+                            )}
+                          </Stack>
+                          <Typography variant="caption" color="text.secondary">
+                            19세 이상만 대화 가능한 캐릭터입니다.
+                          </Typography>
+                        </Box>
+                      }
+                      sx={{ m: 0 }}
+                    />
+                  </Card>
                 </Stack>
               </Grid>
 

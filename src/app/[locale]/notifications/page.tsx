@@ -52,7 +52,7 @@ const iconMap = {
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, openLoginModal } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [typeFilter, setTypeFilter] = useState<'all' | 'token_purchase' | 'subscription' | 'character'>('all');
@@ -61,11 +61,12 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push('/login?redirect=/notifications');
+      openLoginModal('알림을 확인하려면 로그인이 필요해요', '/notifications');
+      setLoading(false);
       return;
     }
     fetchNotifications();
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, openLoginModal]);
 
   const fetchNotifications = async (page: number = 1) => {
     setLoading(true);
@@ -148,7 +149,48 @@ export default function NotificationsPage() {
     { label: '읽음', value: notifications.length - unreadCount },
   ], [notifications.length, unreadCount]);
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated) {
+    return (
+      <PageLayout>
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 95, 155, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto',
+              mb: 3,
+            }}
+          >
+            <NotificationsIcon sx={{ fontSize: 40, color: '#ff5f9b' }} />
+          </Box>
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            로그인이 필요합니다
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            알림을 확인하려면 로그인해주세요.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => openLoginModal('알림을 확인하려면 로그인이 필요해요', '/notifications')}
+            sx={{
+              borderRadius: 2,
+              px: 4,
+              py: 1.5,
+              background: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fab 100%)',
+              fontWeight: 700,
+            }}
+          >
+            로그인하기
+          </Button>
+        </Container>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -156,12 +198,12 @@ export default function NotificationsPage() {
         <Stack spacing={3}>
           <Card
             sx={{
-              borderRadius: 28,
+              borderRadius: 2,
               background: 'linear-gradient(135deg, rgba(255,95,155,0.95), rgba(255,214,227,0.95))',
               color: '#fff',
               px: { xs: 3, md: 4 },
               py: 4,
-              boxShadow: '0 30px 60px rgba(255, 95, 155, 0.3)',
+              boxShadow: '0 8px 24px rgba(255, 95, 155, 0.2)',
             }}
           >
             <Stack spacing={0.5}>
@@ -178,7 +220,7 @@ export default function NotificationsPage() {
                   key={stat.label}
                   sx={{
                     bgcolor: 'rgba(255,255,255,0.15)',
-                    borderRadius: 16,
+                    borderRadius: 1.5,
                     px: 2,
                     py: 1,
                     minWidth: 130,
@@ -223,7 +265,7 @@ export default function NotificationsPage() {
                 variant={typeFilter === item.value ? 'filled' : 'outlined'}
                 color="secondary"
                 onClick={() => setTypeFilter(item.value as any)}
-                sx={{ borderRadius: 8 }}
+                sx={{ borderRadius: 1.5 }}
               />
             ))}
           </Stack>
@@ -234,7 +276,7 @@ export default function NotificationsPage() {
                   <CircularProgress sx={{ color: '#ff5f9b' }} />
                 </Box>
               ) : filteredNotifications.length === 0 ? (
-                <Card sx={{ borderRadius: 20, background: '#fff5fb', px: 3, py: 4 }}>
+                <Card sx={{ borderRadius: 2, background: '#fff5fb', px: 3, py: 4 }}>
                   <Typography variant="body2" color="text.secondary" textAlign="center">
                     해당 조건의 알림이 없습니다.
                   </Typography>
@@ -244,7 +286,7 @@ export default function NotificationsPage() {
                   <Card
                     key={notification._id}
                     sx={{
-                      borderRadius: 20,
+                      borderRadius: 2,
                       border: notification.isRead ? '1px solid rgba(15,23,42,0.08)' : '1px solid rgba(255, 95, 155, 0.4)',
                       background: notification.isRead ? '#fff' : '#fff5fb',
                       position: 'relative',
@@ -274,7 +316,7 @@ export default function NotificationsPage() {
                             sx={{
                               borderColor: '#ff5f9b',
                               color: '#ff5f9b',
-                              borderRadius: 8,
+                              borderRadius: 1.5,
                               fontWeight: 600,
                             }}
                           />
