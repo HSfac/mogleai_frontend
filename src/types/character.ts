@@ -8,13 +8,27 @@ export enum AIModel {
 
 // 캐릭터 인터페이스 정의
 export interface Character {
-  id: string;
+  _id: string;
+  id?: string;
   name: string;
   description?: string;
+  profileImage?: string;
   imageUrl?: string;
-  createdAt: string;
-  updatedAt: string;
-  // 필요한 다른 속성들을 추가하세요
+  personality?: string;
+  speakingStyle?: string;
+  greeting?: string;
+  tags?: string[];
+  likes?: number;
+  usageCount?: number;
+  creator?: {
+    _id?: string;
+    username?: string;
+  };
+  isPublic?: boolean;
+  isAdultContent?: boolean;
+  isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // 캐릭터 생성 DTO 인터페이스

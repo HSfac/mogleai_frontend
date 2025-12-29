@@ -82,4 +82,30 @@ export const authService = {
     }
     return { success: false };
   },
+
+  // ==================== 성인인증 (NHN KCP) ====================
+
+  // 성인인증 상태 확인
+  async getAdultVerificationStatus() {
+    const response = await api.get('/auth/adult-verification/status');
+    return response.data;
+  },
+
+  // KCP 본인인증 초기화 (폼 데이터 반환)
+  async initAdultVerification() {
+    const response = await api.post('/auth/adult-verification/init');
+    return response.data;
+  },
+
+  // KCP 인증 완료 처리 (인증 결과 저장)
+  async completeAdultVerification(data: { ci: string; name: string; birthDate: string }) {
+    const response = await api.post('/auth/adult-verification/complete', data);
+    return response.data;
+  },
+
+  // KCP 인증 팝업 URL 가져오기
+  getKcpPopupUrl() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    return `${apiUrl}/auth/adult-verification/popup`;
+  },
 }; 

@@ -402,20 +402,34 @@ export default function SearchPage() {
                           {character.name.charAt(0)}
                         </Avatar>
                         <Box flex={1} minWidth={0}>
-                          <Typography
-                            variant="h6"
-                            fontWeight={700}
-                            sx={{
-                              mb: 0.5,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 1,
-                              WebkitBoxOrient: 'vertical',
-                            }}
-                          >
-                            {character.name}
-                          </Typography>
+                          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                            <Typography
+                              variant="h6"
+                              fontWeight={700}
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {character.name}
+                            </Typography>
+                            {character.isAdultContent && (
+                              <Chip
+                                label="19+"
+                                size="small"
+                                sx={{
+                                  bgcolor: 'rgba(244, 67, 54, 0.15)',
+                                  color: 'error.main',
+                                  fontWeight: 700,
+                                  fontSize: '0.65rem',
+                                  height: 20,
+                                  border: '1px solid',
+                                  borderColor: 'error.light',
+                                }}
+                              />
+                            )}
+                          </Stack>
                           <Typography variant="caption" color="text.secondary" fontWeight={500}>
                             @{character.creator?.username || '알 수 없음'}
                           </Typography>

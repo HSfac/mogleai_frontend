@@ -133,9 +133,25 @@ export default function PopularCharactersPage() {
                         />
 
                         <CardContent sx={{ p: 3 }}>
-                          <Typography variant="h5" fontWeight={700} color="#fff" mb={1} noWrap>
-                            {character.name}
-                          </Typography>
+                          <Stack direction="row" alignItems="center" spacing={1} mb={1}>
+                            <Typography variant="h5" fontWeight={700} color="#fff" noWrap>
+                              {character.name}
+                            </Typography>
+                            {character.isAdultContent && (
+                              <Chip
+                                label="19+"
+                                size="small"
+                                sx={{
+                                  bgcolor: 'rgba(244, 67, 54, 0.2)',
+                                  color: '#f44336',
+                                  fontWeight: 700,
+                                  fontSize: '0.65rem',
+                                  height: 20,
+                                  border: '1px solid rgba(244, 67, 54, 0.5)',
+                                }}
+                              />
+                            )}
+                          </Stack>
 
                           <Typography
                             variant="body2"
@@ -236,6 +252,20 @@ export default function PopularCharactersPage() {
                                 <Typography variant="h6" fontWeight={700} color="#fff" noWrap>
                                   {character.name}
                                 </Typography>
+                                {character.isAdultContent && (
+                                  <Chip
+                                    label="19+"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: 'rgba(244, 67, 54, 0.2)',
+                                      color: '#f44336',
+                                      fontWeight: 700,
+                                      fontSize: '0.6rem',
+                                      height: 18,
+                                      border: '1px solid rgba(244, 67, 54, 0.5)',
+                                    }}
+                                  />
+                                )}
                               </Stack>
 
                               <Typography

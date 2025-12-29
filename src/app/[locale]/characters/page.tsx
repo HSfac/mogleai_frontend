@@ -24,6 +24,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AddIcon from '@mui/icons-material/Add';
+import VerifiedIcon from '@mui/icons-material/Verified';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { characterService } from '@/services/character.service';
@@ -40,6 +41,7 @@ interface Character {
   usageCount: number;
   tags?: string[];
   isVerified?: boolean;
+  isAdultContent?: boolean;
 }
 
 const defaultTags = ['감성 상담', '판타지', '섭외형', '토론 파트너', '롤플레이'];
@@ -308,9 +310,25 @@ export default function CharactersPage() {
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={2}>
-                        <Typography variant="h6" fontWeight={700} color="#fff">
-                          {character.name}
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Typography variant="h6" fontWeight={700} color="#fff">
+                            {character.name}
+                          </Typography>
+                          {character.isAdultContent && (
+                            <Chip
+                              label="19+"
+                              size="small"
+                              sx={{
+                                bgcolor: 'rgba(244, 67, 54, 0.2)',
+                                color: '#f44336',
+                                fontWeight: 700,
+                                fontSize: '0.65rem',
+                                height: 20,
+                                border: '1px solid rgba(244, 67, 54, 0.5)',
+                              }}
+                            />
+                          )}
+                        </Stack>
                         <IconButton
                           size="small"
                           onClick={(e) => {

@@ -27,7 +27,10 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Tooltip,
 } from '@mui/material';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import ShieldIcon from '@mui/icons-material/Shield';
 import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,6 +38,7 @@ import { userService } from '@/services/userService';
 import { characterService } from '@/services/character.service';
 import { chatService } from '@/services/chatService';
 import { paymentService } from '@/services/paymentService';
+import { authService } from '@/services/authService';
 
 const tabLabels = ['내가 만든 캐릭터', '즐겨찾기', '최근 대화', '결제 내역'];
 
@@ -48,10 +52,14 @@ export default function ProfilePage() {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; severity: 'success' | 'error' | 'info' } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({ username: '' });
   const [saving, setSaving] = useState(false);
+
+  // 성인인증 관련 상태
+  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -123,6 +131,78 @@ export default function ProfilePage() {
     }
   };
 
+  // KCP 인증 결과 메시지 수신 핸들러
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'KCP_CERT_RESULT') {
+        if (event.data.success && event.data.data) {
+          try {
+            // 인증 결과를 서버에 저장
+            await authService.completeAdultVerification({
+              ci: event.data.data.ci,
+              name: event.data.data.name,
+              birthDate: event.data.data.birthDate,
+            });
+
+            setToast({ message: '성인인증이 완료되었습니다.', severity: 'success' });
+            // 사용자 정보 새로고침
+            await refreshUser();
+            const userRes = await userService.getMe();
+            setUserData(userRes);
+          } catch (error: any) {
+            console.error('인증 정보 저장 실패:', error);
+            setToast({ message: error.response?.data?.message || '인증 정보 저장에 실패했습니다.', severity: 'error' });
+          }
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [refreshUser]);
+
+  // KCP 성인인증 시작
+  const handleVerifyAdult = async () => {
+    setVerifying(true);
+    try {
+      // 1. 인증 상태 확인
+      const statusResult = await authService.getAdultVerificationStatus();
+
+      if (!statusResult.kcpConfigured) {
+        setToast({ message: 'KCP 본인인증이 설정되지 않았습니다. 관리자에게 문의하세요.', severity: 'error' });
+        setVerifying(false);
+        return;
+      }
+
+      // 2. KCP 인증 팝업 열기
+      const popupWidth = 500;
+      const popupHeight = 600;
+      const left = window.screenX + (window.outerWidth - popupWidth) / 2;
+      const top = window.screenY + (window.outerHeight - popupHeight) / 2;
+
+      const popupUrl = authService.getKcpPopupUrl();
+      const popup = window.open(
+        popupUrl,
+        'kcpCertification',
+        `width=${popupWidth},height=${popupHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`
+      );
+
+      if (popup) {
+        setToast({ message: '본인인증 창이 열렸습니다. 인증을 완료해주세요.', severity: 'info' });
+      } else {
+        setToast({ message: '팝업이 차단되었습니다. 팝업 차단을 해제해주세요.', severity: 'error' });
+      }
+
+      setVerifyDialogOpen(false);
+    } catch (error: any) {
+      console.error('성인인증 실패:', error);
+      const errorMessage = error.response?.data?.message || error.message || '인증에 실패했습니다.';
+      setToast({ message: errorMessage, severity: 'error' });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <PageLayout>
@@ -170,9 +250,27 @@ export default function ProfilePage() {
                   {authUser?.username?.slice(0, 1) ?? 'U'}
                 </Avatar>
                 <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="h5" fontWeight={700}>
-                    {authUser?.username || '사용자'}
-                  </Typography>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="h5" fontWeight={700}>
+                      {authUser?.username || '사용자'}
+                    </Typography>
+                    {authUser?.isAdultVerified && (
+                      <Tooltip title="19세 이상 인증 완료" arrow>
+                        <Chip
+                          icon={<VerifiedUserIcon sx={{ fontSize: 16, color: '#fff !important' }} />}
+                          label="19+"
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(255,255,255,0.25)',
+                            color: '#fff',
+                            fontWeight: 700,
+                            height: 26,
+                            '& .MuiChip-icon': { color: '#fff' },
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
                   <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
                     {authUser?.email}
                   </Typography>
@@ -226,6 +324,59 @@ export default function ProfilePage() {
                 ))}
               </Stack>
             </Card>
+
+            {/* 19세 인증 안내 카드 */}
+            {!authUser?.isAdultVerified && (
+              <Card
+                sx={{
+                  borderRadius: 2.5,
+                  mb: 3,
+                  border: '1px solid rgba(255, 95, 155, 0.3)',
+                  background: 'linear-gradient(135deg, rgba(255,95,155,0.05) 0%, rgba(255,143,179,0.05) 100%)',
+                }}
+              >
+                <CardContent sx={{ py: 2.5 }}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={2}>
+                    <Box
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: '50%',
+                        bgcolor: 'rgba(255, 95, 155, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <ShieldIcon sx={{ color: '#ff5f9b', fontSize: 28 }} />
+                    </Box>
+                    <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
+                      <Typography variant="subtitle1" fontWeight={600}>
+                        19세 이상 인증하고 더 많은 콘텐츠를 즐겨보세요
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        성인 인증을 완료하면 19+ 캐릭터 생성 및 대화가 가능합니다.
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      size="medium"
+                      onClick={() => setVerifyDialogOpen(true)}
+                      sx={{
+                        bgcolor: '#ff5f9b',
+                        '&:hover': { bgcolor: '#e54d87' },
+                        borderRadius: 2,
+                        px: 3,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      인증하기
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
 
             <Tabs
               value={tabValue}
@@ -425,6 +576,74 @@ export default function ProfilePage() {
               }}
             >
               {saving ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : '저장'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* 성인인증 다이얼로그 */}
+        <Dialog
+          open={verifyDialogOpen}
+          onClose={() => !verifying && setVerifyDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              p: 1,
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 600, textAlign: 'center', pb: 1 }}>
+            <ShieldIcon sx={{ fontSize: 40, color: '#ff5f9b', mb: 1, display: 'block', mx: 'auto' }} />
+            19세 이상 인증
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
+              성인 콘텐츠 이용을 위해 휴대폰 본인인증이 필요합니다.
+            </Typography>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: 'rgba(255, 95, 155, 0.05)',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 95, 155, 0.2)',
+              }}
+            >
+              <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+                인증 절차 안내
+              </Typography>
+              <Typography variant="caption" color="text.secondary" component="div">
+                1. 아래 인증하기 버튼을 클릭합니다.<br />
+                2. 본인인증 팝업이 열립니다.<br />
+                3. 휴대폰 번호를 입력하고 본인인증을 진행합니다.<br />
+                4. 인증이 완료되면 자동으로 반영됩니다.
+              </Typography>
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, textAlign: 'center' }}>
+              본인인증 정보는 연령 확인 목적으로만 사용됩니다.
+            </Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center' }}>
+            <Button
+              onClick={() => setVerifyDialogOpen(false)}
+              disabled={verifying}
+              sx={{ color: 'text.secondary', mr: 1 }}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleVerifyAdult}
+              variant="contained"
+              disabled={verifying}
+              sx={{
+                bgcolor: '#ff5f9b',
+                '&:hover': { bgcolor: '#e54d87' },
+                borderRadius: 2,
+                px: 4,
+                minWidth: 120,
+              }}
+            >
+              {verifying ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : '본인인증하기'}
             </Button>
           </DialogActions>
         </Dialog>

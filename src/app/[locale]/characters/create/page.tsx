@@ -1194,6 +1194,77 @@ export default function CreateCharacterPage() {
           {success}
         </Alert>
       </Snackbar>
+
+      {/* 19세 인증 안내 다이얼로그 */}
+      <Dialog
+        open={adultVerifyDialogOpen}
+        onClose={() => setAdultVerifyDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+          }
+        }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <VerifiedUserIcon sx={{ color: '#ff5f9b' }} />
+            <Typography variant="h6" fontWeight={700}>
+              성인 인증이 필요합니다
+            </Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            성인 컨텐츠 캐릭터를 생성하거나 이용하려면 19세 이상임을 인증해야 합니다.
+          </Alert>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            성인 인증은 프로필 페이지에서 진행할 수 있습니다. 인증이 완료되면 다음 기능을 이용할 수 있습니다:
+          </Typography>
+          <Stack spacing={1} sx={{ mb: 2 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Chip label="1" size="small" sx={{ bgcolor: '#ff5f9b', color: '#fff', width: 24, height: 24 }} />
+              <Typography variant="body2">성인 컨텐츠 캐릭터 생성</Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Chip label="2" size="small" sx={{ bgcolor: '#ff5f9b', color: '#fff', width: 24, height: 24 }} />
+              <Typography variant="body2">19+ 캐릭터와 대화</Typography>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Chip label="3" size="small" sx={{ bgcolor: '#ff5f9b', color: '#fff', width: 24, height: 24 }} />
+              <Typography variant="body2">성인 전용 세계관 접근</Typography>
+            </Stack>
+          </Stack>
+          <Alert severity="warning" icon={<LockIcon />}>
+            인증 정보는 안전하게 보호되며, 법적 요건을 충족하기 위해 사용됩니다.
+          </Alert>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setAdultVerifyDialogOpen(false)}
+            sx={{ color: 'text.secondary' }}
+          >
+            나중에
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setAdultVerifyDialogOpen(false);
+              router.push('/profile?verify=adult');
+            }}
+            sx={{
+              bgcolor: '#ff5f9b',
+              '&:hover': { bgcolor: '#e54d87' },
+              borderRadius: 2,
+              px: 3,
+            }}
+          >
+            인증하러 가기
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageLayout>
   );
 }
