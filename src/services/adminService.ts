@@ -38,6 +38,21 @@ adminApi.interceptors.response.use(
 );
 
 export const adminService = {
+  // ==================== 관리자 로그인 ====================
+
+  async login(email: string, password: string) {
+    const response = await adminApi.post('/auth/admin/login', { email, password });
+    const data = response.data?.data || response.data;
+    if (data.access_token) {
+      localStorage.setItem('adminToken', data.access_token);
+    }
+    return data;
+  },
+
+  logout() {
+    localStorage.removeItem('adminToken');
+  },
+
   // ==================== 대시보드 ====================
 
   async getDashboardStats() {

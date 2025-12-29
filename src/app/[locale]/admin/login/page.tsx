@@ -18,19 +18,21 @@ import {
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import { adminService } from '@/services/adminService';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [adminToken, setAdminToken] = useState('');
-  const [showToken, setShowToken] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!adminToken.trim()) {
-      setError('관리자 토큰을 입력해주세요.');
+    if (!email.trim() || !password.trim()) {
+      setError('이메일과 비밀번호를 모두 입력해주세요.');
       return;
     }
 
@@ -38,14 +40,12 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      // 토큰을 localStorage에 저장
-      localStorage.setItem('adminToken', adminToken);
-
-      // 대시보드로 이동
+      await adminService.login(email, password);
       router.push('/admin/dashboard');
-    } catch (error) {
-      console.error('로그인 실패:', error);
-      setError('로그인에 실패했습니다.');
+    } catch (err: any) {
+      console.error('로그인 실패:', err);
+      const message = err.response?.data?.message || '로그인에 실패했습니다.';
+      setError(message);
       setLoading(false);
     }
   };
@@ -76,17 +76,28 @@ export default function AdminLoginPage() {
             <TextField
               fullWidth
               required
-              label="관리자 토큰"
-              type={showToken ? 'text' : 'password'}
-              value={adminToken}
-              onChange={(e) => setAdminToken(e.target.value)}
-              placeholder="ADMIN_TOKEN 환경변수 값을 입력하세요"
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@monglai.com"
+              sx={{ mb: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              required
+              label="비밀번호"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="비밀번호를 입력하세요"
               sx={{ mb: 3 }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowToken(!showToken)} edge="end">
-                      {showToken ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -111,7 +122,8 @@ export default function AdminLoginPage() {
 
           <Box sx={{ mt: 3, p: 2, bgcolor: '#fff9e6', borderRadius: 1 }}>
             <Typography variant="caption" color="text.secondary">
-              <strong>참고:</strong> 관리자 토큰은 백엔드 .env 파일의 ADMIN_TOKEN 값입니다.
+              <strong>참고:</strong> 관리자 권한이 있는 계정으로만 로그인할 수 있습니다.
+              관리자 권한이 필요하면 기존 관리자에게 문의하세요.
             </Typography>
           </Box>
         </Paper>
