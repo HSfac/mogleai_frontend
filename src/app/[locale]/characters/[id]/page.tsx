@@ -42,7 +42,7 @@ import { api } from '@/lib/api';
 import { chatService } from '@/services/chatService';
 import PresetManager from '@/components/preset/PresetManager';
 
-export default function CharacterDetailPage({ params }) {
+export default function CharacterDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user, isAuthenticated, requireAuth } = useAuth();
   const [character, setCharacter] = useState<any>(null);
@@ -62,7 +62,7 @@ export default function CharacterDetailPage({ params }) {
         setCharacter(characterData);
 
         // Check if user has liked this character
-        if (isAuthenticated && user?.favorites?.includes(params.id)) {
+        if (isAuthenticated && user?.favoriteCharacters?.includes(params.id)) {
           setIsLiked(true);
         }
 

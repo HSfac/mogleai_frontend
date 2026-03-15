@@ -19,7 +19,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import PageLayout from '@/components/PageLayout';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -51,17 +51,17 @@ export default function ChatsPage() {
         setIsLoading(true);
         const chatResponse = await chatService.getChats();
 
-        const uniqueCharacterIds = Array.from(
+        const uniqueCharacterIds: string[] = Array.from(
           new Set(
             (chatResponse || [])
               .map((chat: any) => chat.character?.toString?.())
-              .filter(Boolean),
+              .filter((id: string | undefined): id is string => Boolean(id)),
           ),
         );
 
         const characterMap = new Map<string, any>();
         await Promise.all(
-          uniqueCharacterIds.map(async (id) => {
+          uniqueCharacterIds.map(async (id: string) => {
             try {
               const data = await characterService.getCharacter(id);
               characterMap.set(id, data);
@@ -113,11 +113,11 @@ export default function ChatsPage() {
     }
   }, [searchQuery, chats]);
 
-  const handleSearch = (e) => {
+  const handleSearch = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  const handleDeleteChat = async (chatId) => {
+  const handleDeleteChat = async (chatId: string) => {
     try {
       await chatService.deleteChat(chatId);
       const updatedChats = chats.filter(chat => chat.id !== chatId);
@@ -130,10 +130,10 @@ export default function ChatsPage() {
     }
   };
 
-  const formatTime = (date) => {
+  const formatTime = (date: Date | null) => {
     if (!date) return '';
     const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {
       return format(date, 'a h:mm', { locale: ko });
@@ -159,7 +159,7 @@ export default function ChatsPage() {
             sx={{
               py: 1.5,
               px: 3,
-              borderRadius: 5,
+              borderRadius: 2,
               bgcolor: '#ff5e62',
               color: 'white',
               display: 'inline-block',
@@ -200,10 +200,10 @@ export default function ChatsPage() {
             size="small"
             value={searchQuery}
             onChange={handleSearch}
-            sx={{ 
+            sx={{
               mb: 2,
               '& .MuiOutlinedInput-root': {
-                borderRadius: '24px',
+                borderRadius: 2,
                 bgcolor: '#f5f5f5'
               }
             }}
@@ -336,7 +336,7 @@ export default function ChatsPage() {
             sx={{
               py: 1.5,
               px: 3,
-              borderRadius: 5,
+              borderRadius: 2,
               bgcolor: '#ff5e62',
               color: 'white',
               maxWidth: '80%',

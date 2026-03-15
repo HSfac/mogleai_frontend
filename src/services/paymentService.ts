@@ -1,5 +1,39 @@
 import api from '@/lib/api';
 
+export interface PaymentRecord {
+  _id: string;
+  paymentId: string;
+  orderId: string;
+  amount: number;
+  tokens: number;
+  status: string;
+  type: 'token_purchase' | 'subscription';
+  createdAt: string;
+  paymentMethod?: string;
+  approvedAt?: string;
+  paymentKey?: string;
+  receiptUrl?: string;
+}
+
+function normalizePaymentRecord(record: any): PaymentRecord {
+  const metadata = record?.metadata || {};
+
+  return {
+    _id: record?._id || '',
+    paymentId: record?.paymentId || record?.orderId || '',
+    orderId: record?.orderId || record?.paymentId || '',
+    amount: Number(record?.amount || 0),
+    tokens: Number(record?.tokens || 0),
+    status: record?.status || 'pending',
+    type: record?.type === 'subscription' ? 'subscription' : 'token_purchase',
+    createdAt: record?.createdAt || metadata.approvedAt || new Date().toISOString(),
+    paymentMethod: record?.paymentMethod || record?.method || metadata.method,
+    approvedAt: record?.approvedAt || metadata.approvedAt,
+    paymentKey: record?.paymentKey || metadata.paymentKey,
+    receiptUrl: record?.receiptUrl,
+  };
+}
+
 export const paymentService = {
   // 토큰 패키지 목록
   async getTokenPackages() {
@@ -22,13 +56,15 @@ export const paymentService = {
   // 결제 확인
   async confirmPayment(paymentKey: string, orderId: string, amount: number) {
     const response = await api.post('/payment/confirm', { paymentKey, orderId, amount });
-    return response.data;
+    return normalizePaymentRecord(response.data);
   },
 
   // 결제 내역 조회
   async getPaymentHistory() {
     const response = await api.get('/payment/history');
-    return response.data;
+    return Array.isArray(response.data)
+      ? response.data.map(normalizePaymentRecord)
+      : [];
   },
 
   // 결제 취소
@@ -60,6 +96,20 @@ export const paymentService = {
   // 구독 상태 조회
   async getSubscriptionStatus() {
     const response = await api.get('/payment/billing/status');
+    return response.data;
+  },
+
+  // ==================== 쿠폰 ====================
+
+  // 쿠폰 적용
+  async applyCoupon(code: string) {
+    const response = await api.post('/payment/coupon/apply', { code });
+    return response.data;
+  },
+
+  // 쿠폰 유효성 검사
+  async validateCoupon(code: string) {
+    const response = await api.get(`/payment/coupon/validate?code=${encodeURIComponent(code)}`);
     return response.data;
   },
 };

@@ -61,7 +61,7 @@ export const authService = {
   // 소셜 로그인 - 구글
   loginWithGoogle() {
     if (typeof window !== 'undefined') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
       window.location.href = `${apiUrl}/auth/google`;
     }
   },
@@ -69,7 +69,7 @@ export const authService = {
   // 소셜 로그인 - 카카오
   loginWithKakao() {
     if (typeof window !== 'undefined') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
       window.location.href = `${apiUrl}/auth/kakao`;
     }
   },

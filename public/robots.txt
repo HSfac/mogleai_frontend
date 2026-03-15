@@ -1,0 +1,18 @@
+# 몽글AI 검색엔진 크롤링 설정
+User-agent: *
+Allow: /
+
+# 관리자 페이지 제외
+Disallow: /admin/
+Disallow: /*/admin/
+
+# API 및 내부 경로 제외
+Disallow: /api/
+Disallow: /_next/
+
+# 인증 관련 페이지 제외
+Disallow: /auth/
+Disallow: /*/auth/
+
+# 사이트맵
+Sitemap: https://mongl.ai/sitemap.xml

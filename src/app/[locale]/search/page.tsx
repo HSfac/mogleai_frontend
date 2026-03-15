@@ -63,7 +63,7 @@ export default function SearchPage() {
     if (!searchQuery.trim()) return characters;
     return characters.filter((character) =>
       [character.name, character.description, ...(character.tags || [])]
-        .some((value) => value.toLowerCase().includes(searchQuery.toLowerCase())),
+        .some((value) => (value || '').toLowerCase().includes(searchQuery.toLowerCase())),
     );
   }, [searchQuery, characters]);
 

@@ -1,18 +1,23 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Box, Button, Card, CardContent, CircularProgress, Container, Typography, Chip } from '@mui/material';
 import PageLayout from '@/components/PageLayout';
 import { paymentService } from '@/services/paymentService';
 import { useAuth } from '@/contexts/AuthContext';
+import { localizePath } from '@/lib/localePath';
 
 export default function SubscriptionSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const params = useParams<{ locale?: string }>();
+  const { isAuthenticated, loading: authLoading, refreshUser } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const loginPath = localizePath(params?.locale, '/login');
+  const subscriptionSuccessPath = localizePath(params?.locale, '/payment/subscription-success');
+  const tokensPath = localizePath(params?.locale, '/tokens');
 
   const planType = useMemo(() => searchParams.get('planType') || 'basic', [searchParams]);
 
@@ -20,6 +25,10 @@ export default function SubscriptionSuccessPage() {
     const authKey = searchParams.get('authKey');
 
     const completeSubscription = async () => {
+      if (authLoading) {
+        return;
+      }
+
       if (!authKey) {
         setMessage('authKey가 전달되지 않았습니다.');
         setStatus('error');
@@ -27,13 +36,16 @@ export default function SubscriptionSuccessPage() {
       }
 
       if (!isAuthenticated) {
-        router.push('/login?redirect=/payment/subscription-success');
+        router.push(
+          `${loginPath}?redirect=${encodeURIComponent(`${subscriptionSuccessPath}?planType=${planType}`)}`,
+        );
         return;
       }
 
       try {
         await paymentService.issueBillingKey(authKey);
         await paymentService.startSubscription(planType);
+        await refreshUser();
         setStatus('success');
         setMessage('구독이 활성화되었습니다. 매월 자동으로 토큰이 충전됩니다.');
       } catch (error: any) {
@@ -44,7 +56,7 @@ export default function SubscriptionSuccessPage() {
     };
 
     completeSubscription();
-  }, [isAuthenticated, router, searchParams]);
+  }, [authLoading, isAuthenticated, loginPath, planType, refreshUser, router, searchParams, subscriptionSuccessPath]);
 
   return (
     <PageLayout>
@@ -67,7 +79,7 @@ export default function SubscriptionSuccessPage() {
                 <Typography color="text.secondary" textAlign="center">
                   {message}
                 </Typography>
-                <Button variant="contained" color="secondary" onClick={() => router.push('/tokens')}>
+                <Button variant="contained" color="secondary" onClick={() => router.push(tokensPath)}>
                   토큰/구독 페이지로 이동
                 </Button>
               </Box>

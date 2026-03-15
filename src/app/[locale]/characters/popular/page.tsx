@@ -18,13 +18,29 @@ import {
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
-import axios from 'axios';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import { characterService } from '@/services/character.service';
+
+interface PopularCharacter {
+  _id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  profileImage?: string;
+  isAdultContent?: boolean;
+  likes?: number;
+  usageCount?: number;
+  conversationCount?: number;
+  creator?: {
+    username?: string;
+    profileImage?: string;
+  };
+}
 
 export default function PopularCharactersPage() {
-  const [characters, setCharacters] = useState([]);
+  const [characters, setCharacters] = useState<PopularCharacter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const theme = useTheme();
@@ -34,8 +50,7 @@ export default function PopularCharactersPage() {
     const fetchPopularCharacters = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/characters/popular`);
-        const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+        const data = await characterService.getPopularCharacters();
         setCharacters(data);
       } catch (error) {
         console.error('인기 캐릭터를 불러오는데 실패했습니다:', error);
@@ -48,7 +63,7 @@ export default function PopularCharactersPage() {
     fetchPopularCharacters();
   }, []);
 
-  const getRankBadge = (index) => {
+  const getRankBadge = (index: number) => {
     if (index === 0) return { emoji: '🥇', color: '#FFD700', label: '1위' };
     if (index === 1) return { emoji: '🥈', color: '#C0C0C0', label: '2위' };
     if (index === 2) return { emoji: '🥉', color: '#CD7F32', label: '3위' };
@@ -171,7 +186,7 @@ export default function PopularCharactersPage() {
                           <Stack direction="row" spacing={2} mb={2}>
                             <Chip
                               icon={<ChatBubbleOutlineIcon sx={{ fontSize: 16 }} />}
-                              label={(character.conversationCount || 0).toLocaleString()}
+                              label={(character.usageCount || character.conversationCount || 0).toLocaleString()}
                               size="small"
                               sx={{
                                 bgcolor: '#2a2a2a',
@@ -286,7 +301,7 @@ export default function PopularCharactersPage() {
                                 <Stack direction="row" alignItems="center" spacing={0.5}>
                                   <ChatBubbleOutlineIcon sx={{ fontSize: 14, color: '#666' }} />
                                   <Typography variant="caption" color="#999" fontWeight={600}>
-                                    {(character.conversationCount || 0).toLocaleString()}
+                                    {(character.usageCount || character.conversationCount || 0).toLocaleString()}
                                   </Typography>
                                 </Stack>
                                 <Stack direction="row" alignItems="center" spacing={0.5}>

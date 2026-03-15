@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Box,
   Container,
@@ -30,6 +31,7 @@ import AutorenewIcon from '@mui/icons-material/Autorenew';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { paymentService } from '@/services/paymentService';
+import { localizePath } from '@/lib/localePath';
 
 interface TokenPackage {
   id: string;
@@ -47,6 +49,7 @@ declare global {
 }
 
 export default function TokensPage() {
+  const params = useParams<{ locale?: string }>();
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const [packages, setPackages] = useState<TokenPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +59,11 @@ export default function TokensPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'basic' | 'standard' | 'premium'>('standard');
   const tossPayments = useRef<any>(null);
+  const tossClientKey = process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY;
+  const tokensPath = localizePath(params?.locale, '/tokens');
+  const paymentSuccessPath = localizePath(params?.locale, '/payment/success');
+  const paymentFailPath = localizePath(params?.locale, '/payment/fail');
+  const subscriptionSuccessPath = localizePath(params?.locale, '/payment/subscription-success');
 
   const subscriptionPlans = [
     { id: 'basic', name: '베이직', price: 9900, tokens: 300, description: '가벼운 이용자용' },
@@ -68,8 +76,8 @@ export default function TokensPage() {
     script.src = 'https://js.tosspayments.com/v1/payment';
     script.async = true;
     script.onload = () => {
-      if (window.TossPayments) {
-        tossPayments.current = window.TossPayments(process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY);
+      if (window.TossPayments && tossClientKey) {
+        tossPayments.current = window.TossPayments(tossClientKey);
       }
     };
     document.body.appendChild(script);
@@ -92,13 +100,13 @@ export default function TokensPage() {
     return () => {
       document.body.removeChild(script);
     };
-  }, []);
+  }, [tossClientKey]);
 
   const handleBuyTokens = async (pkg: TokenPackage) => {
     if (paymentLoading) return;
 
     if (!isAuthenticated) {
-      openLoginModal('토큰을 구매하려면 로그인이 필요해요', '/tokens');
+      openLoginModal('토큰을 구매하려면 로그인이 필요해요', tokensPath);
       return;
     }
 
@@ -124,8 +132,8 @@ export default function TokensPage() {
         orderId,
         orderName: pkg.name,
         customerName: user?.username || '사용자',
-        successUrl: `${window.location.origin}/payment/success`,
-        failUrl: `${window.location.origin}/payment/fail`,
+        successUrl: `${window.location.origin}${paymentSuccessPath}`,
+        failUrl: `${window.location.origin}${paymentFailPath}`,
       });
     } catch (error: any) {
       console.error('결제 시작 실패:', error);
@@ -136,7 +144,7 @@ export default function TokensPage() {
 
   const handleOpenDialog = () => {
     if (!isAuthenticated) {
-      openLoginModal('구독을 시작하려면 로그인이 필요해요', '/tokens');
+      openLoginModal('구독을 시작하려면 로그인이 필요해요', tokensPath);
       return;
     }
     setDialogOpen(true);
@@ -148,13 +156,14 @@ export default function TokensPage() {
     setDialogOpen(false);
     setPaymentLoading(true);
     try {
+      if (!tossClientKey) throw new Error('토스 결제 클라이언트 키가 설정되지 않았습니다.');
       if (!tossPayments.current) throw new Error('결제 시스템 초기화 실패');
       const customerKey = user?._id || '';
       const planType = selectedPlan;
       await tossPayments.current.requestBillingAuth('카드', {
         customerKey,
-        successUrl: `${window.location.origin}/payment/subscription-success?planType=${planType}`,
-        failUrl: `${window.location.origin}/payment/fail`,
+        successUrl: `${window.location.origin}${subscriptionSuccessPath}?planType=${planType}`,
+        failUrl: `${window.location.origin}${paymentFailPath}`,
       });
     } catch (error: any) {
       console.error('구독 실패:', error);

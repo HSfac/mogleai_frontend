@@ -792,7 +792,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 
         {/* 토스트 */}
         <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-          {toast && <Alert severity={toast.severity}>{toast.message}</Alert>}
+          {toast ? <Alert severity={toast.severity}>{toast.message}</Alert> : undefined}
         </Snackbar>
         <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError('')} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
           <Alert severity="error">{error}</Alert>

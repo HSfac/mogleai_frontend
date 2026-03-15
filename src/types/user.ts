@@ -20,6 +20,9 @@ export interface User {
   isSubscribed: boolean;
   subscriptionEndDate?: string;
   isVerified: boolean;
+  isAdultVerified?: boolean;
+  adultVerifiedAt?: string;
+  isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }

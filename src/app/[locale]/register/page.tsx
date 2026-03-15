@@ -30,6 +30,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
 import { useAuth } from '@/contexts/AuthContext';
+import { authService } from '@/services/authService';
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
@@ -79,10 +80,8 @@ export default function RegisterPage() {
     try {
       setIsLoading(true);
       setError('');
-      const response = await register(formData.email, formData.password, formData.username);
-      if (response) {
-        setSuccess('회원가입이 완료되었습니다!');
-      }
+      await register(formData.email, formData.password, formData.username);
+      setSuccess('회원가입이 완료되었습니다!');
     } catch (error: any) {
       console.error('회원가입 중 오류가 발생했습니다:', error);
       setError(error.response?.data?.message || '회원가입 중 오류가 발생했습니다.');
@@ -91,11 +90,10 @@ export default function RegisterPage() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     if (provider === 'google') {
-      window.location.href = `${backendUrl}/auth/google`;
+      authService.loginWithGoogle();
     } else if (provider === 'kakao') {
-      window.location.href = `${backendUrl}/auth/kakao`;
+      authService.loginWithKakao();
     } else {
       setError(`${provider} 로그인은 현재 준비 중입니다.`);
     }

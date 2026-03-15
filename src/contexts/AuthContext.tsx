@@ -3,23 +3,9 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { authService } from '@/services/authService';
 import { userService } from '@/services/userService';
+import type { User } from '@/types/user';
 import { useRouter } from 'next/navigation';
 import LoginModal from '@/components/auth/LoginModal';
-
-interface User {
-  _id: string;
-  email: string;
-  username: string;
-  profileImage?: string;
-  tokens: number;
-  totalConversations: number;
-  creatorLevel: string;
-  popularCharacters: number;
-  isSubscribed: boolean;
-  subscriptionEndDate?: Date;
-  isVerified: boolean;
-  isAdultVerified: boolean;
-}
 
 interface AuthContextType {
   user: User | null;

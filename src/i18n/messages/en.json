@@ -15,7 +15,23 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "profile": "Manage Profile"
+    "profile": "Manage Profile",
+    "submit": "Submit",
+    "close": "Close",
+    "view_more": "View More",
+    "view_all": "View All",
+    "no_data": "No data available",
+    "required": "Required",
+    "optional": "Optional",
+    "copy": "Copy",
+    "share": "Share",
+    "report": "Report",
+    "block": "Block",
+    "unblock": "Unblock",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "like": "Like",
+    "unlike": "Unlike"
   },
   "nav": {
     "home": "Home",
@@ -33,11 +49,14 @@
     "new_ranking": "New Rankings",
     "popular_ranking": "Popular Rankings",
     "chat_list": "Chat List",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "pricing": "Pricing",
+    "leaderboard": "Leaderboard",
+    "creator_dashboard": "Creator Dashboard"
   },
   "home": {
-    "hero_title": "Creator Club & B.ONLY Guide",
-    "hero_subtitle": "Start a special conversation with your own AI character",
+    "hero_title": "Special Conversations with MonglAI",
+    "hero_subtitle": "Have meaningful conversations with your own AI characters",
     "hero_button": "Browse Characters",
     "tabs": {
       "home": "Home",
@@ -54,7 +73,8 @@
       "trending": "📈"
     },
     "section_new": "✨ Trending New Characters",
-    "section_popular": "🔥 Popular Characters"
+    "section_popular": "🔥 Popular Characters",
+    "section_recommended": "💝 Recommended Characters"
   },
   "auth": {
     "login_title": "Login",
@@ -72,7 +92,13 @@
     "or": "or",
     "login_button": "Login",
     "register_button": "Sign Up",
-    "username": "Username"
+    "username": "Username",
+    "reset_password": "Reset Password",
+    "reset_email_sent": "Password reset email has been sent",
+    "invalid_credentials": "Invalid email or password",
+    "email_required": "Please enter your email",
+    "password_required": "Please enter your password",
+    "password_mismatch": "Passwords do not match"
   },
   "tokens": {
     "balance": "Token Balance",
@@ -80,13 +106,26 @@
     "history": "Usage History",
     "charge": "Charge",
     "price": "${amount}",
-    "tokens_amount": "{amount} Tokens"
+    "tokens_amount": "{amount} Tokens",
+    "bonus": "Bonus",
+    "popular": "Popular",
+    "package": "Package",
+    "instant_charge": "Instant Charge",
+    "auto_charge": "Auto Charge"
   },
   "chat": {
     "send": "Send",
     "typing": "Typing...",
     "new_chat": "New Chat",
-    "character_select": "Select Character"
+    "character_select": "Select Character",
+    "message_placeholder": "Type your message...",
+    "regenerate": "Regenerate",
+    "copy_message": "Copy Message",
+    "delete_message": "Delete Message",
+    "no_chats": "No chat history",
+    "start_conversation": "Start a conversation",
+    "token_usage": "Token Usage",
+    "insufficient_tokens": "Insufficient tokens"
   },
   "character": {
     "creator": "Creator",
@@ -94,6 +133,105 @@
     "chats": "Chats",
     "tags": "Tags",
     "description": "Description",
-    "start_chat": "Start Chat"
+    "start_chat": "Start Chat",
+    "create_new": "Create New Character",
+    "edit_character": "Edit Character",
+    "delete_character": "Delete Character",
+    "name": "Name",
+    "greeting": "Greeting",
+    "personality": "Personality",
+    "scenario": "Scenario",
+    "example_dialogue": "Example Dialogue",
+    "visibility": "Visibility",
+    "public": "Public",
+    "private": "Private",
+    "verified": "Verified",
+    "adult_only": "Adult Only",
+    "usage_count": "Usage Count",
+    "created_at": "Created At",
+    "category": "Category"
+  },
+  "profile": {
+    "my_profile": "My Profile",
+    "edit_profile": "Edit Profile",
+    "my_characters": "My Characters",
+    "favorites": "Favorites",
+    "payment_history": "Payment History",
+    "subscription": "Subscription",
+    "settings": "Settings",
+    "account_settings": "Account Settings",
+    "notification_settings": "Notification Settings",
+    "language_settings": "Language Settings",
+    "theme_settings": "Theme Settings",
+    "delete_account": "Delete Account"
+  },
+  "subscription": {
+    "premium": "Premium",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "subscribe": "Subscribe",
+    "cancel_subscription": "Cancel Subscription",
+    "benefits": "Benefits",
+    "active": "Active",
+    "inactive": "Inactive",
+    "expires_at": "Expires At",
+    "auto_renewal": "Auto Renewal"
+  },
+  "payment": {
+    "payment_method": "Payment Method",
+    "card": "Card",
+    "bank_transfer": "Bank Transfer",
+    "total_amount": "Total Amount",
+    "discount": "Discount",
+    "coupon": "Coupon",
+    "apply_coupon": "Apply Coupon",
+    "remove_coupon": "Remove Coupon",
+    "payment_success": "Payment completed successfully",
+    "payment_failed": "Payment failed",
+    "refund": "Refund",
+    "refund_request": "Request Refund",
+    "order_number": "Order Number",
+    "payment_date": "Payment Date"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark All Read",
+    "no_notifications": "No notifications",
+    "new_message": "New Message",
+    "new_follower": "New Follower",
+    "character_liked": "Character Liked",
+    "payment_complete": "Payment Complete",
+    "token_received": "Tokens Received"
+  },
+  "creator": {
+    "dashboard": "Creator Dashboard",
+    "my_earnings": "My Earnings",
+    "total_earnings": "Total Earnings",
+    "pending_settlement": "Pending Settlement",
+    "settlement_history": "Settlement History",
+    "character_stats": "Character Stats",
+    "level": "Level",
+    "earning_rate": "Earning Rate",
+    "apply_settlement": "Request Settlement"
+  },
+  "errors": {
+    "page_not_found": "Page Not Found",
+    "page_not_found_desc": "The page you're looking for doesn't exist or has been moved.",
+    "server_error": "Server Error",
+    "server_error_desc": "Something went wrong on our end. Please try again later.",
+    "go_home": "Go to Home",
+    "go_back": "Go Back",
+    "try_again": "Try Again",
+    "network_error": "Network Error",
+    "unauthorized": "Please log in",
+    "forbidden": "Access denied",
+    "something_went_wrong": "Something went wrong"
+  },
+  "footer": {
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "contact": "Contact Us",
+    "faq": "FAQ",
+    "copyright": "© 2024 MonglAI. All rights reserved."
   }
 }

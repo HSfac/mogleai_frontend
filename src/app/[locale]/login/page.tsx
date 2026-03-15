@@ -30,6 +30,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
+import { authService } from '@/services/authService';
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
@@ -66,11 +67,10 @@ export default function LoginPage() {
   };
 
   const handleSocialLogin = (provider: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     if (provider === 'google') {
-      window.location.href = `${backendUrl}/auth/google`;
+      authService.loginWithGoogle();
     } else if (provider === 'kakao') {
-      window.location.href = `${backendUrl}/auth/kakao`;
+      authService.loginWithKakao();
     } else {
       setError(`${provider} 로그인은 현재 준비 중입니다.`);
     }

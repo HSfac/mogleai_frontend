@@ -71,17 +71,17 @@ export default function ChatPage() {
           api.get('/characters').catch(() => ({ data: [] })),
         ]);
 
-        const uniqueCharacterIds = Array.from(
+        const uniqueCharacterIds: string[] = Array.from(
           new Set(
             chatResponse
               .map((chat: any) => chat.character?.toString())
-              .filter(Boolean),
+              .filter((id: string | undefined): id is string => Boolean(id)),
           ),
         );
 
         const characterMap = new Map<string, Character>();
         await Promise.all(
-          uniqueCharacterIds.map(async (id) => {
+          uniqueCharacterIds.map(async (id: string) => {
             try {
               const data = await characterService.getCharacter(id);
               characterMap.set(id, data);

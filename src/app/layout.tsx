@@ -1,13 +1,11 @@
 import { Providers } from './providers';
-import { Inter } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata = {
-  title: '몽글챗 - AI 캐릭터 챗봇 서비스',
+  title: '몽글AI - AI 캐릭터 챗봇 서비스',
   description: '나만의 AI 캐릭터를 만들고 대화해보세요!',
   metadataBase: new URL('https://mongl.ai'),
+  manifest: '/manifest.json',
   icons: {
     icon: [
       { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
@@ -19,17 +17,25 @@ export const metadata = {
     ],
   },
   openGraph: {
-    title: '몽글챗 - AI 캐릭터 챗봇 서비스',
+    title: '몽글AI - AI 캐릭터 챗봇 서비스',
     description: '나만의 AI 캐릭터를 만들고 대화해보세요!',
     url: 'https://mongl.ai',
-    siteName: '몽글챗',
+    siteName: '몽글AI',
     locale: 'ko_KR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: '몽글챗 - AI 캐릭터 챗봇 서비스',
+    title: '몽글AI - AI 캐릭터 챗봇 서비스',
     description: '나만의 AI 캐릭터를 만들고 대화해보세요!',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '몽글AI',
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -40,9 +46,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className={inter.className}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
   );
-} 
+}

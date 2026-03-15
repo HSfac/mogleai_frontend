@@ -17,6 +17,7 @@ import {
   Alert,
   List,
   ListItem,
+  ListItemButton,
   ListItemAvatar,
   ListItemText,
   Paper,
@@ -465,18 +466,20 @@ export default function ProfilePage() {
             {tabValue === 2 && (
               <List>
                 {recentChats.map((chat) => (
-                  <ListItem key={chat._id} button onClick={() => router.push(`/chat/${chat._id}`)}>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e' }}>
-                        {chat.characterInfo?.name?.slice(0, 1) || 'C'}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={chat.characterInfo?.name || '알 수 없는'}
-                      secondary={`마지막 대화: ${
-                        chat.lastActivity ? new Date(chat.lastActivity).toLocaleString() : '정보 없음'
-                      }`}
-                    />
+                  <ListItem key={chat._id} disablePadding>
+                    <ListItemButton onClick={() => router.push(`/chat/${chat._id}`)}>
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e' }}>
+                          {chat.characterInfo?.name?.slice(0, 1) || 'C'}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={chat.characterInfo?.name || '알 수 없는'}
+                        secondary={`마지막 대화: ${
+                          chat.lastActivity ? new Date(chat.lastActivity).toLocaleString() : '정보 없음'
+                        }`}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 ))}
                 {recentChats.length === 0 && (
@@ -654,7 +657,7 @@ export default function ProfilePage() {
           onClose={() => setToast(null)}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-          {toast && <Alert severity={toast.severity}>{toast.message}</Alert>}
+          {toast ? <Alert severity={toast.severity}>{toast.message}</Alert> : undefined}
         </Snackbar>
       </Container>
     </PageLayout>

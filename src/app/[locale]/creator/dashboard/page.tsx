@@ -196,10 +196,21 @@ export default function CreatorDashboardPage() {
                         {character.description || '설명이 없습니다.'}
                       </Typography>
                       <Stack direction="row" spacing={1} mt={2}>
-                        <Button size="small" variant="outlined" sx={{ borderRadius: 999 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderRadius: 999 }}
+                          onClick={() => router.push(`/characters/${character._id}/edit`)}
+                        >
                           수정
                         </Button>
-                        <Button size="small" variant="contained" color="secondary" sx={{ borderRadius: 999 }}>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="secondary"
+                          sx={{ borderRadius: 999 }}
+                          onClick={() => router.push(`/characters/${character._id}`)}
+                        >
                           보기
                         </Button>
                       </Stack>
@@ -260,7 +271,7 @@ export default function CreatorDashboardPage() {
       </Container>
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        {toast && <Alert severity={toast.severity}>{toast.message}</Alert>}
+        {toast ? <Alert severity={toast.severity}>{toast.message}</Alert> : undefined}
       </Snackbar>
     </PageLayout>
   );

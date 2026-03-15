@@ -1,22 +1,17 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Text,
-  VStack,
-  Image,
-  Flex,
-  useToast,
-  Icon,
-  Center,
-  Spinner,
-} from '@chakra-ui/react';
-import { useState, useRef } from 'react';
-import { FaUpload, FaImage, FaTrash } from 'react-icons/fa';
+  CircularProgress,
+  Stack,
+  Typography,
+} from '@mui/material';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ImageIcon from '@mui/icons-material/Image';
 import api from '@/lib/api';
 
 interface ImageUploaderProps {
@@ -25,193 +20,156 @@ interface ImageUploaderProps {
 }
 
 export default function ImageUploader({ initialImage, onImageUpload }: ImageUploaderProps) {
-  const [imagePreview, setImagePreview] = useState<string>(initialImage || '');
-  const [isUploading, setIsUploading] = useState<boolean>(false);
-  const [dragActive, setDragActive] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const toast = useToast();
+  const [imagePreview, setImagePreview] = useState(initialImage || '');
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
-    }
-  };
-
-  const handleFile = async (file: File) => {
-    // 파일 유효성 검사
-    if (!file.type.match('image.*')) {
-      toast({
-        title: '이미지 파일만 업로드 가능합니다.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
+  const validateFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('이미지 파일만 업로드 가능합니다.');
     }
 
-    // 파일 크기 제한 (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: '파일 크기는 5MB 이하여야 합니다.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
+      throw new Error('파일 크기는 5MB 이하여야 합니다.');
     }
-
-    // 이미지 미리보기
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // 서버에 이미지 업로드
-    uploadImage(file);
   };
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
+    setError('');
+
     try {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post(
-        '/upload/image',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const response = await api.post('/upload/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      const imageUrl = response.data.imageUrl;
+      const imageUrl = response.data.imageUrl || response.data;
+      setImagePreview(imageUrl);
       onImageUpload(imageUrl);
-
-      toast({
-        title: '이미지 업로드 성공',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error('이미지 업로드 실패:', error);
-      toast({
-        title: '이미지 업로드 실패',
-        description: '이미지를 업로드하는데 문제가 발생했습니다.',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
+    } catch (uploadError: any) {
+      console.error('이미지 업로드 실패:', uploadError);
+      setError(uploadError?.response?.data?.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleButtonClick = () => {
-    inputRef.current?.click();
+  const handleFile = async (file: File) => {
+    try {
+      validateFile(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImagePreview((event.target?.result as string) || '');
+      };
+      reader.readAsDataURL(file);
+      await uploadImage(file);
+    } catch (validationError: any) {
+      setError(validationError.message || '이미지 처리에 실패했습니다.');
+    }
+  };
+
+  const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await handleFile(file);
   };
 
   const handleRemoveImage = () => {
     setImagePreview('');
+    setError('');
     onImageUpload('');
   };
 
   return (
-    <FormControl>
-      <FormLabel>캐릭터 이미지</FormLabel>
+    <Box>
+      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+        캐릭터 이미지
+      </Typography>
+
       <Box
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-        borderWidth={2}
-        borderRadius="lg"
-        borderColor={dragActive ? 'brand.500' : 'gray.200'}
-        borderStyle="dashed"
-        p={4}
-        textAlign="center"
-        bg={dragActive ? 'brand.50' : 'transparent'}
-        transition="all 0.2s"
+        sx={{
+          border: '1px dashed rgba(255, 95, 155, 0.4)',
+          borderRadius: 3,
+          p: 3,
+          bgcolor: '#fff',
+        }}
       >
-        <Input
+        <input
+          ref={inputRef}
           type="file"
           accept="image/*"
           onChange={handleChange}
-          ref={inputRef}
-          display="none"
+          style={{ display: 'none' }}
         />
-        
+
+        {error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        ) : null}
+
         {isUploading ? (
-          <Center p={10}>
-            <VStack>
-              <Spinner size="xl" color="brand.500" />
-              <Text mt={4}>이미지 업로드 중...</Text>
-            </VStack>
-          </Center>
+          <Stack alignItems="center" spacing={2} sx={{ py: 4 }}>
+            <CircularProgress sx={{ color: '#ff5f9b' }} />
+            <Typography variant="body2" color="text.secondary">
+              이미지 업로드 중...
+            </Typography>
+          </Stack>
         ) : imagePreview ? (
-          <VStack spacing={4}>
-            <Image
+          <Stack spacing={2}>
+            <Box
+              component="img"
               src={imagePreview}
-              alt="캐릭터 이미지"
-              maxH="200px"
-              borderRadius="md"
+              alt="업로드 이미지"
+              sx={{
+                width: '100%',
+                maxHeight: 280,
+                objectFit: 'cover',
+                borderRadius: 2,
+                bgcolor: '#f5f5f5',
+              }}
             />
-            <Flex>
+            <Stack direction="row" spacing={1}>
               <Button
-                leftIcon={<FaUpload />}
-                onClick={handleButtonClick}
-                colorScheme="brand"
-                variant="outline"
-                mr={2}
+                variant="outlined"
+                startIcon={<CloudUploadIcon />}
+                onClick={() => inputRef.current?.click()}
               >
                 변경
               </Button>
               <Button
-                leftIcon={<FaTrash />}
+                color="error"
+                variant="outlined"
+                startIcon={<DeleteOutlineIcon />}
                 onClick={handleRemoveImage}
-                colorScheme="red"
-                variant="outline"
               >
                 삭제
               </Button>
-            </Flex>
-          </VStack>
+            </Stack>
+          </Stack>
         ) : (
-          <VStack spacing={4} p={10} cursor="pointer" onClick={handleButtonClick}>
-            <Icon as={FaImage} w={12} h={12} color="gray.400" />
-            <Text>이미지를 드래그하거나 클릭하여 업로드하세요</Text>
-            <Text fontSize="sm" color="gray.500">
-              최대 5MB, JPG, PNG, GIF 형식 지원
-            </Text>
-            <Button leftIcon={<FaUpload />} colorScheme="brand">
+          <Stack alignItems="center" spacing={2} sx={{ py: 4 }}>
+            <ImageIcon sx={{ fontSize: 56, color: 'rgba(0,0,0,0.3)' }} />
+            <Typography variant="body2" color="text.secondary">
+              이미지를 선택해 업로드하세요.
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<CloudUploadIcon />}
+              onClick={() => inputRef.current?.click()}
+              sx={{ bgcolor: '#ff5f9b' }}
+            >
               이미지 선택
             </Button>
-          </VStack>
+          </Stack>
         )}
       </Box>
-    </FormControl>
+    </Box>
   );
-} 
+}

@@ -9,9 +9,14 @@ import { ReactNode, useState } from 'react';
 interface PageLayoutProps {
   children: ReactNode;
   showHeader?: boolean;
+  hideFooter?: boolean;
 }
 
-export default function PageLayout({ children, showHeader = true }: PageLayoutProps) {
+export default function PageLayout({
+  children,
+  showHeader = true,
+  hideFooter = false,
+}: PageLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState(240);
 
   return (
@@ -31,7 +36,7 @@ export default function PageLayout({ children, showHeader = true }: PageLayoutPr
           width: '100%',
           ml: showHeader ? { xs: 0, md: `${sidebarWidth}px` } : 0,
           minHeight: '100vh',
-          pb: showHeader ? { xs: 10, md: 0 } : 0,
+          pb: showHeader && !hideFooter ? { xs: 10, md: 0 } : 0,
           transition: 'margin-left 0.3s ease',
         }}
       >
@@ -39,7 +44,7 @@ export default function PageLayout({ children, showHeader = true }: PageLayoutPr
         {children}
       </Box>
 
-      {showHeader && <MobileNavBar />}
+      {showHeader && !hideFooter && <MobileNavBar />}
     </Box>
   );
 }

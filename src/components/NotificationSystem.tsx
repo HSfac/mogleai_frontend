@@ -1,30 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
+  Badge,
   Box,
   Button,
+  CircularProgress,
   IconButton,
-  Text,
-  VStack,
-  HStack,
-  Badge,
-  Divider,
-} from '@chakra-ui/react';
-import { useToast } from '@chakra-ui/toast';
-import {
   Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton
-} from '@chakra-ui/popover';
-import { useState, useEffect } from 'react';
-import { FaBell } from 'react-icons/fa';
+  Stack,
+  Typography,
+} from '@mui/material';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useRouter } from 'next/navigation';
-import { useColorModeValue } from '@chakra-ui/color-mode';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from '@/services/notificationService';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
@@ -41,52 +29,26 @@ interface Notification {
 }
 
 export default function NotificationSystem() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { isAuthenticated } = useAuth();
-  const toast = useToast();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // WebSocket 훅 사용
   const {
-    isConnected,
     unreadCount,
     newNotification,
     markAsRead: socketMarkAsRead,
     markAllAsRead: socketMarkAllAsRead,
+    isConnected,
     clearNewNotification,
   } = useNotificationSocket();
 
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
-    }
-  }, [isAuthenticated]);
-
-  // 새 알림 수신 시 처리
-  useEffect(() => {
-    if (newNotification) {
-      // 알림 목록에 추가
-      setNotifications((prev) => [newNotification, ...prev]);
-
-      // Toast 알림 표시
-      toast({
-        title: newNotification.title,
-        description: newNotification.message,
-        status: newNotification.type === 'error' ? 'error' :
-                newNotification.type === 'warning' ? 'warning' :
-                newNotification.type === 'success' ? 'success' : 'info',
-        duration: 5000,
-        isClosable: true,
-        position: 'top-right',
-      });
-
-      clearNewNotification();
-    }
-  }, [newNotification, toast, clearNewNotification]);
+    if (!newNotification) return;
+    setNotifications((prev) => [newNotification, ...prev]);
+    clearNewNotification();
+  }, [clearNewNotification, newNotification]);
 
   const fetchNotifications = async () => {
     if (!isAuthenticated) return;
@@ -94,7 +56,8 @@ export default function NotificationSystem() {
     setIsLoading(true);
     try {
       const data = await notificationService.getNotifications();
-      setNotifications(data);
+      const notificationList = Array.isArray(data) ? data : (data?.notifications || []);
+      setNotifications(notificationList);
     } catch (error) {
       console.error('알림을 불러오는데 실패했습니다:', error);
     } finally {
@@ -102,175 +65,126 @@ export default function NotificationSystem() {
     }
   };
 
-  const markAsRead = async (id: string) => {
-    if (!isAuthenticated) return;
+  const handleOpen = async (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+    await fetchNotifications();
+  };
 
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
     try {
-      // WebSocket으로 먼저 전송 (실시간 업데이트)
-      if (isConnected) {
-        socketMarkAsRead(id);
-      } else {
-        // WebSocket 연결이 없으면 HTTP API 사용
-        await notificationService.markAsRead(id);
+      if (!notification.isRead) {
+        if (isConnected) {
+          socketMarkAsRead(notification._id);
+        } else {
+          await notificationService.markAsRead(notification._id);
+        }
+
+        setNotifications((prev) =>
+          prev.map((item) =>
+            item._id === notification._id ? { ...item, isRead: true } : item,
+          ),
+        );
       }
 
-      // 로컬 상태 업데이트
-      setNotifications(
-        notifications.map((n) =>
-          n._id === id ? { ...n, isRead: true } : n
-        )
-      );
+      if (notification.link) {
+        router.push(notification.link);
+      }
     } catch (error) {
-      console.error('알림 상태 변경에 실패했습니다:', error);
+      console.error('알림 처리에 실패했습니다:', error);
+    } finally {
+      handleClose();
     }
   };
 
-  const markAllAsRead = async () => {
-    if (!isAuthenticated) return;
-
+  const handleMarkAllAsRead = async () => {
     try {
-      // WebSocket으로 먼저 전송
       if (isConnected) {
         socketMarkAllAsRead();
       } else {
         await notificationService.markAllAsRead();
       }
 
-      // 로컬 상태 업데이트
-      setNotifications(
-        notifications.map((n) => ({ ...n, isRead: true }))
-      );
-
-      toast({
-        title: '모든 알림을 읽음으로 표시했습니다.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
     } catch (error) {
-      console.error('알림 상태 변경에 실패했습니다:', error);
+      console.error('전체 읽음 처리에 실패했습니다:', error);
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    // 읽음 표시
-    if (!notification.isRead) {
-      markAsRead(notification._id);
-    }
-    
-    // 링크가 있으면 해당 페이지로 이동
-    if (notification.link) {
-      router.push(notification.link);
-    }
-  };
+  if (!isAuthenticated) {
+    return null;
+  }
 
-  const getNotificationBadgeColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'green';
-      case 'warning':
-        return 'orange';
-      case 'error':
-        return 'red';
-      default:
-        return 'blue';
-    }
-  };
-
-  if (!isAuthenticated) return null;
+  const open = Boolean(anchorEl);
 
   return (
-    <Popover placement="bottom-end">
-      <PopoverTrigger>
-        <Box position="relative">
-          <IconButton
-            aria-label="알림"
-            icon={<FaBell />}
-            variant="ghost"
-            size="md"
-          />
-          {unreadCount > 0 && (
-            <Badge
-              position="absolute"
-              top="-2px"
-              right="-2px"
-              colorScheme="red"
-              borderRadius="full"
-              fontSize="xs"
-              minW="1.5em"
-              textAlign="center"
-            >
-              {unreadCount}
-            </Badge>
-          )}
-        </Box>
-      </PopoverTrigger>
-      <PopoverContent
-        w="350px"
-        maxH="500px"
-        overflowY="auto"
-        bg={bgColor}
-        borderColor={borderColor}
+    <>
+      <IconButton aria-label="알림" onClick={handleOpen}>
+        <Badge badgeContent={unreadCount} color="error">
+          <NotificationsIcon />
+        </Badge>
+      </IconButton>
+
+      <Popover
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
-        <PopoverArrow />
-        <PopoverCloseButton />
-        <PopoverHeader fontWeight="bold" borderBottomWidth="1px">
-          <HStack justify="space-between">
-            <Text>알림</Text>
-            {unreadCount > 0 && (
-              <Button size="xs" onClick={markAllAsRead}>
-                모두 읽음 표시
-              </Button>
-            )}
-          </HStack>
-        </PopoverHeader>
-        <PopoverBody p={0}>
-          {notifications.length === 0 ? (
-            <Box p={4} textAlign="center">
-              <Text color="gray.500">새로운 알림이 없습니다.</Text>
+        <Box sx={{ width: 360, maxWidth: 'calc(100vw - 32px)', p: 2 }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              알림
+            </Typography>
+            <Button size="small" onClick={handleMarkAllAsRead}>
+              모두 읽음
+            </Button>
+          </Stack>
+
+          {isLoading ? (
+            <Box display="flex" justifyContent="center" py={4}>
+              <CircularProgress size={24} />
             </Box>
+          ) : notifications.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              새로운 알림이 없습니다.
+            </Typography>
           ) : (
-            <VStack spacing={0} align="stretch">
-              {notifications.map((notification) => (
+            <Stack spacing={1}>
+              {notifications.slice(0, 8).map((notification) => (
                 <Box
                   key={notification._id}
-                  p={3}
-                  cursor="pointer"
                   onClick={() => handleNotificationClick(notification)}
-                  bg={notification.isRead ? 'transparent' : useColorModeValue('gray.50', 'gray.700')}
-                  _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}
-                  borderBottomWidth="1px"
-                  borderColor={borderColor}
+                  sx={{
+                    p: 1.5,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    bgcolor: notification.isRead ? '#fafafa' : 'rgba(255,95,155,0.08)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    '&:hover': {
+                      bgcolor: notification.isRead ? '#f5f5f5' : 'rgba(255,95,155,0.14)',
+                    },
+                  }}
                 >
-                  <HStack mb={1}>
-                    <Badge colorScheme={getNotificationBadgeColor(notification.type)}>
-                      {notification.type}
-                    </Badge>
-                    <Text fontSize="xs" color="gray.500">
-                      {new Date(notification.createdAt).toLocaleString()}
-                    </Text>
-                  </HStack>
-                  <Text fontWeight="bold">{notification.title}</Text>
-                  <Text fontSize="sm" noOfLines={2}>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {notification.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {notification.message}
-                  </Text>
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </Typography>
                 </Box>
               ))}
-            </VStack>
+            </Stack>
           )}
-        </PopoverBody>
-        <PopoverFooter borderTopWidth="1px">
-          <Button
-            size="sm"
-            variant="link"
-            colorScheme="brand"
-            w="full"
-            onClick={() => router.push('/notifications')}
-          >
-            모든 알림 보기
-          </Button>
-        </PopoverFooter>
-      </PopoverContent>
-    </Popover>
+        </Box>
+      </Popover>
+    </>
   );
-} 
+}

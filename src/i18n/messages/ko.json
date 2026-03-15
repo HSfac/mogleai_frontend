@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "몽글챗",
+    "appName": "몽글AI",
     "login": "로그인",
     "logout": "로그아웃",
     "register": "회원가입",
@@ -15,7 +15,23 @@
     "loading": "로딩 중...",
     "error": "오류",
     "success": "성공",
-    "profile": "프로필 관리"
+    "profile": "프로필 관리",
+    "submit": "제출",
+    "close": "닫기",
+    "view_more": "더 보기",
+    "view_all": "전체 보기",
+    "no_data": "데이터가 없습니다",
+    "required": "필수",
+    "optional": "선택",
+    "copy": "복사",
+    "share": "공유",
+    "report": "신고",
+    "block": "차단",
+    "unblock": "차단 해제",
+    "follow": "팔로우",
+    "unfollow": "언팔로우",
+    "like": "좋아요",
+    "unlike": "좋아요 취소"
   },
   "nav": {
     "home": "홈",
@@ -33,11 +49,14 @@
     "new_ranking": "신작 랭킹",
     "popular_ranking": "인기 랭킹",
     "chat_list": "대화 목록",
-    "notifications": "알림"
+    "notifications": "알림",
+    "pricing": "요금제",
+    "leaderboard": "리더보드",
+    "creator_dashboard": "크리에이터 대시보드"
   },
   "home": {
-    "hero_title": "크리에이터 클럽 & B.ONLY 가이드",
-    "hero_subtitle": "당신만의 특별한 AI 캐릭터와 대화하세요",
+    "hero_title": "몽글AI와 함께하는 특별한 대화",
+    "hero_subtitle": "당신만의 AI 캐릭터와 깊이 있는 대화를 나눠보세요",
     "hero_button": "캐릭터 둘러보기",
     "tabs": {
       "home": "홈",
@@ -54,7 +73,8 @@
       "trending": "📈"
     },
     "section_new": "✨ 지금 뜨는 신작 캐릭터",
-    "section_popular": "🔥 인기 캐릭터"
+    "section_popular": "🔥 인기 캐릭터",
+    "section_recommended": "💝 추천 캐릭터"
   },
   "auth": {
     "login_title": "로그인",
@@ -72,7 +92,13 @@
     "or": "또는",
     "login_button": "로그인",
     "register_button": "회원가입하기",
-    "username": "사용자명"
+    "username": "사용자명",
+    "reset_password": "비밀번호 재설정",
+    "reset_email_sent": "비밀번호 재설정 이메일이 전송되었습니다",
+    "invalid_credentials": "이메일 또는 비밀번호가 올바르지 않습니다",
+    "email_required": "이메일을 입력해주세요",
+    "password_required": "비밀번호를 입력해주세요",
+    "password_mismatch": "비밀번호가 일치하지 않습니다"
   },
   "tokens": {
     "balance": "보유 토큰",
@@ -80,13 +106,26 @@
     "history": "사용 내역",
     "charge": "충전하기",
     "price": "₩{amount}",
-    "tokens_amount": "{amount} 토큰"
+    "tokens_amount": "{amount} 토큰",
+    "bonus": "보너스",
+    "popular": "인기",
+    "package": "패키지",
+    "instant_charge": "즉시 충전",
+    "auto_charge": "자동 충전"
   },
   "chat": {
     "send": "전송",
     "typing": "입력 중...",
     "new_chat": "새 대화",
-    "character_select": "캐릭터 선택"
+    "character_select": "캐릭터 선택",
+    "message_placeholder": "메시지를 입력하세요...",
+    "regenerate": "다시 생성",
+    "copy_message": "메시지 복사",
+    "delete_message": "메시지 삭제",
+    "no_chats": "대화 기록이 없습니다",
+    "start_conversation": "대화를 시작하세요",
+    "token_usage": "토큰 사용량",
+    "insufficient_tokens": "토큰이 부족합니다"
   },
   "character": {
     "creator": "크리에이터",
@@ -94,6 +133,105 @@
     "chats": "대화",
     "tags": "태그",
     "description": "설명",
-    "start_chat": "대화 시작"
+    "start_chat": "대화 시작",
+    "create_new": "새 캐릭터 만들기",
+    "edit_character": "캐릭터 수정",
+    "delete_character": "캐릭터 삭제",
+    "name": "이름",
+    "greeting": "인사말",
+    "personality": "성격",
+    "scenario": "시나리오",
+    "example_dialogue": "예시 대화",
+    "visibility": "공개 설정",
+    "public": "공개",
+    "private": "비공개",
+    "verified": "인증됨",
+    "adult_only": "성인 전용",
+    "usage_count": "사용 횟수",
+    "created_at": "생성일",
+    "category": "카테고리"
+  },
+  "profile": {
+    "my_profile": "내 프로필",
+    "edit_profile": "프로필 수정",
+    "my_characters": "내 캐릭터",
+    "favorites": "즐겨찾기",
+    "payment_history": "결제 내역",
+    "subscription": "구독 관리",
+    "settings": "설정",
+    "account_settings": "계정 설정",
+    "notification_settings": "알림 설정",
+    "language_settings": "언어 설정",
+    "theme_settings": "테마 설정",
+    "delete_account": "계정 삭제"
+  },
+  "subscription": {
+    "premium": "프리미엄",
+    "monthly": "월간 구독",
+    "yearly": "연간 구독",
+    "subscribe": "구독하기",
+    "cancel_subscription": "구독 취소",
+    "benefits": "구독 혜택",
+    "active": "활성",
+    "inactive": "비활성",
+    "expires_at": "만료일",
+    "auto_renewal": "자동 갱신"
+  },
+  "payment": {
+    "payment_method": "결제 수단",
+    "card": "카드",
+    "bank_transfer": "계좌 이체",
+    "total_amount": "총 금액",
+    "discount": "할인",
+    "coupon": "쿠폰",
+    "apply_coupon": "쿠폰 적용",
+    "remove_coupon": "쿠폰 제거",
+    "payment_success": "결제가 완료되었습니다",
+    "payment_failed": "결제에 실패했습니다",
+    "refund": "환불",
+    "refund_request": "환불 요청",
+    "order_number": "주문 번호",
+    "payment_date": "결제일"
+  },
+  "notifications": {
+    "title": "알림",
+    "mark_all_read": "모두 읽음",
+    "no_notifications": "알림이 없습니다",
+    "new_message": "새 메시지",
+    "new_follower": "새 팔로워",
+    "character_liked": "캐릭터 좋아요",
+    "payment_complete": "결제 완료",
+    "token_received": "토큰 지급"
+  },
+  "creator": {
+    "dashboard": "크리에이터 대시보드",
+    "my_earnings": "내 수익",
+    "total_earnings": "총 수익",
+    "pending_settlement": "정산 대기",
+    "settlement_history": "정산 내역",
+    "character_stats": "캐릭터 통계",
+    "level": "레벨",
+    "earning_rate": "수익률",
+    "apply_settlement": "정산 신청"
+  },
+  "errors": {
+    "page_not_found": "페이지를 찾을 수 없습니다",
+    "page_not_found_desc": "요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.",
+    "server_error": "서버 오류가 발생했습니다",
+    "server_error_desc": "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+    "go_home": "홈으로 돌아가기",
+    "go_back": "이전 페이지로",
+    "try_again": "다시 시도",
+    "network_error": "네트워크 오류",
+    "unauthorized": "로그인이 필요합니다",
+    "forbidden": "접근 권한이 없습니다",
+    "something_went_wrong": "문제가 발생했습니다"
+  },
+  "footer": {
+    "terms": "이용약관",
+    "privacy": "개인정보처리방침",
+    "contact": "문의하기",
+    "faq": "자주 묻는 질문",
+    "copyright": "© 2024 몽글AI. All rights reserved."
   }
 }
