@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
       >
         <Container maxWidth="sm">
           <Box sx={{ mb: 4 }}>
-            <Link href="/login" passHref>
+            <Link href="/login">
               <Button
                 startIcon={<ArrowBackIcon />}
                 sx={{ color: '#999', mb: 3, '&:hover': { color: '#ff3366' } }}

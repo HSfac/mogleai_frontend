@@ -3,19 +3,16 @@
 import { Box, IconButton, Typography, Badge, Avatar } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 export default function MobileHeader() {
-  const router = useRouter();
-  const pathname = usePathname();
   const { user, isAuthenticated } = useAuth();
   const t = useTranslations();
-
-  // Extract locale from pathname
-  const locale = pathname.split('/')[1] || 'ko';
-  const getLocalePath = (path: string) => `/${locale}${path}`;
+  const { push } = useLocaleNavigation();
+  const { unreadCount } = useNotificationSocket();
 
   return (
     <Box
@@ -40,7 +37,7 @@ export default function MobileHeader() {
           gap: 1,
           cursor: 'pointer',
         }}
-        onClick={() => router.push(getLocalePath('/'))}
+        onClick={() => push('/')}
       >
         <Box
           sx={{
@@ -68,21 +65,21 @@ export default function MobileHeader() {
         <IconButton
           size="small"
           sx={{ color: '#999' }}
-          onClick={() => router.push(getLocalePath('/search'))}
+          onClick={() => push('/search')}
         >
           <SearchIcon />
         </IconButton>
         <IconButton
           size="small"
           sx={{ color: '#999' }}
-          onClick={() => router.push(getLocalePath('/notifications'))}
+          onClick={() => push('/notifications')}
         >
-          <Badge badgeContent={0} color="error">
+          <Badge badgeContent={unreadCount} color="error" max={99}>
             <NotificationsIcon />
           </Badge>
         </IconButton>
         <Avatar
-          onClick={() => router.push(getLocalePath(isAuthenticated ? '/profile' : '/login'))}
+          onClick={() => push(isAuthenticated ? '/profile' : '/login')}
           sx={{
             width: 28,
             height: 28,

@@ -34,6 +34,7 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 interface Character {
   _id: string;
@@ -181,6 +182,7 @@ const EmptyState = ({ searchQuery }: { searchQuery: string }) => (
 export default function CharactersPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -256,7 +258,7 @@ export default function CharactersPage() {
 
   const handleFavoriteToggle = async (characterId: string) => {
     if (!isAuthenticated) {
-      window.location.href = '/login?redirect=/characters';
+      window.location.href = `${getLocalePath('/login')}?redirect=${encodeURIComponent(getLocalePath('/characters'))}`;
       return;
     }
 
@@ -538,7 +540,7 @@ export default function CharactersPage() {
               {displayedCharacters.map((character, index) => (
                 <Grid item xs={6} sm={6} md={4} key={character._id}>
                   <Card
-                    onClick={() => router.push(`/characters/${character._id}`)}
+                    onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
                     sx={{
                       height: '100%',
                       background: 'linear-gradient(145deg, #1a1a1a 0%, #151515 100%)',
@@ -739,7 +741,7 @@ export default function CharactersPage() {
         <Fab
           color="primary"
           aria-label="캐릭터 만들기"
-          onClick={() => router.push('/characters/create')}
+          onClick={() => router.push(getLocalePath('/characters/create'))}
           sx={{
             position: 'fixed',
             bottom: { xs: 24, md: 32 },

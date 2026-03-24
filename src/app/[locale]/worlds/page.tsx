@@ -28,12 +28,14 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { worldService } from '@/services/worldService';
 import { World } from '@/types/world';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 const defaultTags = ['판타지', '현대', '로맨스', 'SF', '역사', '학원'];
 
 export default function WorldsPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [worlds, setWorlds] = useState<World[]>([]);
   const [popularWorlds, setPopularWorlds] = useState<World[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export default function WorldsPage() {
 
   const loadMyWorlds = async () => {
     if (!isAuthenticated) {
-      router.push('/login?redirect=/worlds');
+      router.push(`${getLocalePath('/login')}?redirect=${encodeURIComponent(getLocalePath('/worlds'))}`);
       return;
     }
     setLoading(true);
@@ -118,7 +120,7 @@ export default function WorldsPage() {
   const handleLike = async (worldId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
-      router.push('/login?redirect=/worlds');
+      router.push(`${getLocalePath('/login')}?redirect=${encodeURIComponent(getLocalePath('/worlds'))}`);
       return;
     }
     try {
@@ -161,7 +163,7 @@ export default function WorldsPage() {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => router.push('/worlds/create')}
+                onClick={() => router.push(getLocalePath('/worlds/create'))}
                 sx={{
                   bgcolor: '#ff3366',
                   fontWeight: 700,
@@ -320,7 +322,7 @@ export default function WorldsPage() {
                 <Button
                   variant="contained"
                   startIcon={<AddIcon />}
-                  onClick={() => router.push('/worlds/create')}
+                  onClick={() => router.push(getLocalePath('/worlds/create'))}
                   sx={{
                     mt: 2,
                     bgcolor: '#ff3366',
@@ -337,7 +339,7 @@ export default function WorldsPage() {
               {displayedWorlds.map((world) => (
                 <Grid item xs={12} sm={6} md={4} key={world._id}>
                   <Card
-                    onClick={() => router.push(`/worlds/${world._id}`)}
+                    onClick={() => router.push(getLocalePath(`/worlds/${world._id}`))}
                     sx={{
                       height: '100%',
                       bgcolor: '#1a1a1a',

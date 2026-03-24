@@ -11,15 +11,14 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import TokenIcon from '@mui/icons-material/Token';
-import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
+import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 
 export default function TopHeader({ title = '몽글AI' }) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { push } = useLocaleNavigation();
   const { user, loading } = useAuth();
-  const locale = pathname.split('/')[1] || 'ko';
-  const getLocalePath = (path: string) => `/${locale}${path}`;
+  const { unreadCount } = useNotificationSocket();
 
   return (
     <Box
@@ -63,19 +62,19 @@ export default function TopHeader({ title = '몽글AI' }) {
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <IconButton
-          onClick={() => router.push(getLocalePath('/notifications'))}
+          onClick={() => push('/notifications')}
           sx={{ color: 'inherit' }}
         >
-          <Badge badgeContent={4} color="error">
+          <Badge badgeContent={unreadCount} color="error" max={99}>
             <NotificationsIcon />
           </Badge>
         </IconButton>
 
-        <IconButton onClick={() => router.push(getLocalePath('/search'))} sx={{ color: 'inherit' }}>
+        <IconButton onClick={() => push('/search')} sx={{ color: 'inherit' }}>
           <SearchIcon />
         </IconButton>
 
-        <IconButton onClick={() => router.push(getLocalePath('/tokens'))} sx={{ color: 'inherit' }}>
+        <IconButton onClick={() => push('/tokens')} sx={{ color: 'inherit' }}>
           <TokenIcon />
         </IconButton>
 

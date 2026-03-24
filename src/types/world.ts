@@ -1,8 +1,8 @@
 // 공개 범위 enum
 export enum Visibility {
   PUBLIC = 'public',
+  UNLISTED = 'unlisted',
   PRIVATE = 'private',
-  FOLLOWERS_ONLY = 'followers_only',
 }
 
 // 세계관 인터페이스

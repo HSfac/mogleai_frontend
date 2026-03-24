@@ -1,9 +1,25 @@
 import api from '@/lib/api';
+import type { CreatorProfile } from '@/types/user';
 
 export const userService = {
   // 내 정보 조회
   async getMe() {
     const response = await api.get('/users/me');
+    return response.data;
+  },
+
+  async getCreatorProfile(creatorId: string): Promise<CreatorProfile> {
+    const response = await api.get(`/users/creators/${creatorId}`);
+    return response.data;
+  },
+
+  async followCreator(creatorId: string) {
+    const response = await api.put(`/users/creators/${creatorId}/follow`);
+    return response.data;
+  },
+
+  async unfollowCreator(creatorId: string) {
+    const response = await api.delete(`/users/creators/${creatorId}/follow`);
     return response.data;
   },
 

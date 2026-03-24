@@ -22,6 +22,7 @@ import WhatshotIcon from '@mui/icons-material/Whatshot';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { characterService } from '@/services/character.service';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 interface PopularCharacter {
   _id: string;
@@ -34,6 +35,7 @@ interface PopularCharacter {
   usageCount?: number;
   conversationCount?: number;
   creator?: {
+    _id?: string;
     username?: string;
     profileImage?: string;
   };
@@ -43,6 +45,7 @@ export default function PopularCharactersPage() {
   const [characters, setCharacters] = useState<PopularCharacter[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -103,7 +106,7 @@ export default function PopularCharactersPage() {
                   return (
                     <Grid item xs={12} md={4} key={character._id}>
                       <Card
-                        onClick={() => router.push(`/characters/${character._id}`)}
+                        onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
                         sx={{
                           bgcolor: '#1a1a1a',
                           borderRadius: 3,
@@ -214,7 +217,21 @@ export default function PopularCharactersPage() {
                                 src={character.creator.profileImage}
                                 sx={{ width: 24, height: 24, border: '2px solid #333' }}
                               />
-                              <Typography variant="caption" color="#666" fontWeight={600}>
+                              <Typography
+                                variant="caption"
+                                color="#666"
+                                fontWeight={600}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (character.creator?._id) {
+                                    router.push(getLocalePath(`/creators/${character.creator._id}`));
+                                  }
+                                }}
+                                sx={{
+                                  cursor: character.creator?._id ? 'pointer' : 'default',
+                                  '&:hover': character.creator?._id ? { color: '#ff6699' } : undefined,
+                                }}
+                              >
                                 {character.creator.username}
                               </Typography>
                             </Stack>
@@ -239,7 +256,7 @@ export default function PopularCharactersPage() {
                       return (
                         <Grid item xs={12} sm={6} key={character._id}>
                           <Card
-                            onClick={() => router.push(`/characters/${character._id}`)}
+                            onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
                             sx={{
                               bgcolor: '#1a1a1a',
                               borderRadius: 2,

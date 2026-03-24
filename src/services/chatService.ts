@@ -76,7 +76,13 @@ export const chatService = {
     content: string,
     handlers: {
       onChunk?: (chunk: string, fullText: string) => void;
-      onDone?: (payload?: any) => void;
+      onDone?: (payload?: {
+        reply?: string;
+        tokensUsed?: number;
+        tokenCost?: number;
+        suggestedReplies?: string[];
+        state?: SessionState;
+      }) => void;
       onError?: (error: Error) => void;
     } = {},
   ) {

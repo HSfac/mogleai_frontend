@@ -25,6 +25,7 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import WhatshotIcon from '@mui/icons-material/Whatshot';
 import StarIcon from '@mui/icons-material/Star';
 import api from '@/lib/api';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 // 애니메이션 키프레임
 const shimmer = keyframes`
@@ -102,6 +103,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
 
   useEffect(() => {
     const loadLeaderboard = async () => {
@@ -352,7 +354,22 @@ export default function LeaderboardPage() {
                         <Typography variant={isFirst ? 'h5' : 'h6'} fontWeight={800} gutterBottom>
                           {entry.character.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            display: 'block',
+                            mb: 2,
+                            cursor: entry.creator?._id ? 'pointer' : 'default',
+                            '&:hover': entry.creator?._id ? { color: '#ff5f9b' } : undefined,
+                          }}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (entry.creator?._id) {
+                              router.push(getLocalePath(`/creators/${entry.creator._id}`));
+                            }
+                          }}
+                        >
                           by {entry.creator.username}
                         </Typography>
 
@@ -433,7 +450,7 @@ export default function LeaderboardPage() {
                         borderColor: 'rgba(255, 95, 155, 0.3)',
                       },
                     }}
-                    onClick={() => router.push(`/characters/${entry.character._id}`)}
+                    onClick={() => router.push(getLocalePath(`/characters/${entry.character._id}`))}
                   >
                     <Stack direction="row" alignItems="center" spacing={{ xs: 1.5, md: 2.5 }}>
                       {/* 순위 */}
@@ -471,7 +488,20 @@ export default function LeaderboardPage() {
                           <Typography variant="subtitle1" fontWeight={700} noWrap>
                             {entry.character.name}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              cursor: entry.creator?._id ? 'pointer' : 'default',
+                              '&:hover': entry.creator?._id ? { color: '#ff5f9b' } : undefined,
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (entry.creator?._id) {
+                                router.push(getLocalePath(`/creators/${entry.creator._id}`));
+                              }
+                            }}
+                          >
                             by {entry.creator.username}
                           </Typography>
                         </Stack>
@@ -562,7 +592,7 @@ export default function LeaderboardPage() {
             </Typography>
             <Button
               variant="contained"
-              onClick={() => router.push('/characters')}
+              onClick={() => router.push(getLocalePath('/characters'))}
               sx={{
                 borderRadius: 3,
                 px: 4,

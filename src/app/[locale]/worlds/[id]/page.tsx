@@ -29,11 +29,13 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { worldService } from '@/services/worldService';
 import { World, Visibility } from '@/types/world';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function WorldDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { user, isAuthenticated } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [world, setWorld] = useState<World | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -54,7 +56,7 @@ export default function WorldDetailPage() {
       setWorld(data);
     } catch (error) {
       console.error('세계관을 불러오는데 실패했습니다:', error);
-      router.push('/worlds');
+      router.push(getLocalePath('/worlds'));
     } finally {
       setLoading(false);
     }
@@ -62,7 +64,7 @@ export default function WorldDetailPage() {
 
   const handleLike = async () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=/worlds/${worldId}`);
+      router.push(`${getLocalePath('/login')}?redirect=${encodeURIComponent(getLocalePath(`/worlds/${worldId}`))}`);
       return;
     }
     try {
@@ -77,7 +79,7 @@ export default function WorldDetailPage() {
     setDeleting(true);
     try {
       await worldService.deleteWorld(worldId);
-      router.push('/worlds');
+      router.push(getLocalePath('/worlds'));
     } catch (error) {
       console.error('삭제 실패:', error);
     } finally {
@@ -105,8 +107,8 @@ export default function WorldDetailPage() {
         return '전체 공개';
       case Visibility.PRIVATE:
         return '비공개';
-      case Visibility.FOLLOWERS_ONLY:
-        return '팔로워 전용';
+      case Visibility.UNLISTED:
+        return '링크 공개';
       default:
         return visibility;
     }
@@ -177,7 +179,7 @@ export default function WorldDetailPage() {
         <Container maxWidth="lg" sx={{ py: 4, mt: world.coverImage ? -8 : 0, position: 'relative' }}>
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={() => router.push('/worlds')}
+            onClick={() => router.push(getLocalePath('/worlds'))}
             sx={{ color: '#999', mb: 3, '&:hover': { color: '#fff' } }}
           >
             세계관 목록
@@ -241,7 +243,7 @@ export default function WorldDetailPage() {
                 {isOwner && (
                   <>
                     <IconButton
-                      onClick={() => router.push(`/worlds/${worldId}/edit`)}
+                      onClick={() => router.push(getLocalePath(`/worlds/${worldId}/edit`))}
                       sx={{
                         color: '#666',
                         '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' },
@@ -368,7 +370,7 @@ export default function WorldDetailPage() {
             <Box sx={{ pt: 3, borderTop: '1px solid #2a2a2a' }}>
               <Button
                 variant="contained"
-                onClick={() => router.push(`/characters/create?worldId=${worldId}`)}
+                onClick={() => router.push(getLocalePath(`/characters/create?worldId=${worldId}`))}
                 sx={{
                   bgcolor: '#ff3366',
                   fontWeight: 700,

@@ -26,6 +26,7 @@ import { ko } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { chatService } from '@/services/chatService';
 import { characterService } from '@/services/character.service';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 interface ChatListItem {
   id: string;
@@ -39,6 +40,7 @@ interface ChatListItem {
 
 export default function ChatsPage() {
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
   const { isAuthenticated, openLoginModal } = useAuth();
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [filteredChats, setFilteredChats] = useState<ChatListItem[]>([]);
@@ -342,7 +344,7 @@ export default function ChatsPage() {
               maxWidth: '80%',
               cursor: 'pointer'
             }}
-            onClick={() => router.push('/characters')}
+            onClick={() => router.push(getLocalePath('/characters'))}
           >
             <Typography variant="body2" fontWeight="medium">
               새로운 대화 시작하기

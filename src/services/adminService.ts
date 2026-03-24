@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { localizePath } from '@/lib/localePath';
 
 const adminApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
@@ -30,7 +31,8 @@ adminApi.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('adminToken');
-        window.location.href = '/admin/login';
+        const locale = window.location.pathname.split('/')[1];
+        window.location.href = localizePath(locale, '/admin/login');
       }
     }
     return Promise.reject(error);

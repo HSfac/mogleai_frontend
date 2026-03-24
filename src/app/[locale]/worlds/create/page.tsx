@@ -27,10 +27,12 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { worldService } from '@/services/worldService';
 import { CreateWorldDto, Visibility } from '@/types/world';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function CreateWorldPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState('');
@@ -81,7 +83,8 @@ export default function CreateWorldPage() {
 
   const handleSubmit = async () => {
     if (!isAuthenticated) {
-      router.push('/login?redirect=/worlds/create');
+      const worldCreatePath = getLocalePath('/worlds/create');
+      router.push(`${getLocalePath('/login')}?redirect=${encodeURIComponent(worldCreatePath)}`);
       return;
     }
 
@@ -105,7 +108,7 @@ export default function CreateWorldPage() {
 
     try {
       const world = await worldService.createWorld(formData);
-      router.push(`/worlds/${world._id}`);
+      router.push(getLocalePath(`/worlds/${world._id}`));
     } catch (err: any) {
       setError(err.response?.data?.message || '세계관 생성에 실패했습니다.');
     } finally {
@@ -378,10 +381,10 @@ export default function CreateWorldPage() {
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#ff3366' },
                         '& .MuiSvgIcon-root': { color: '#666' },
                       }}
-                    >
+                      >
                       <MenuItem value={Visibility.PUBLIC}>전체 공개</MenuItem>
+                      <MenuItem value={Visibility.UNLISTED}>링크 공개</MenuItem>
                       <MenuItem value={Visibility.PRIVATE}>비공개</MenuItem>
-                      <MenuItem value={Visibility.FOLLOWERS_ONLY}>팔로워 전용</MenuItem>
                     </Select>
                   </FormControl>
 

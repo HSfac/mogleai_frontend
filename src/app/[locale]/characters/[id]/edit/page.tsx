@@ -34,10 +34,12 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function EditCharacterPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -70,11 +72,18 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
+  const loginPath = getLocalePath('/login');
+  const characterDetailPath = getLocalePath(`/characters/${params.id}`);
+  const characterEditPath = getLocalePath(`/characters/${params.id}/edit`);
 
   // 캐릭터 데이터 불러오기
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.push('/login?redirect=/characters/' + params.id + '/edit');
+      router.replace(`${loginPath}?redirect=${encodeURIComponent(characterEditPath)}`);
       return;
     }
 
@@ -87,7 +96,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
         if (character.creator._id !== user?._id) {
           setError('본인이 만든 캐릭터만 수정할 수 있습니다.');
           setTimeout(() => {
-            router.push(`/characters/${params.id}`);
+            router.push(characterDetailPath);
           }, 2000);
           return;
         }
@@ -127,7 +136,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
     };
 
     fetchCharacter();
-  }, [params.id, isAuthenticated, router, user]);
+  }, [authLoading, characterDetailPath, characterEditPath, isAuthenticated, loginPath, params.id, router, user]);
 
   // 입력 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -276,7 +285,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
 
       // 2초 후 캐릭터 상세 페이지로 이동
       setTimeout(() => {
-        router.push(`/characters/${params.id}`);
+        router.push(characterDetailPath);
       }, 2000);
     } catch (error: any) {
       console.error('캐릭터 수정 실패:', error);
@@ -399,7 +408,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
                     >
                       <MenuItem value="gpt4">GPT-4 (균형잡힌 성능)</MenuItem>
                       <MenuItem value="claude3">Claude 3 (창의적인 대화)</MenuItem>
-                      <MenuItem value="mistral">Mistral (빠른 응답)</MenuItem>
+                      <MenuItem value="grok">Grok (빠른 응답)</MenuItem>
                     </Select>
                   </FormControl>
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { localizePath } from './localePath';
 
 const api = axios.create({
   // 기본값은 백엔드 개발 포트(5001). 배포/로컬 변경은 NEXT_PUBLIC_API_URL 환경변수로 조정.
@@ -37,7 +38,8 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+        const locale = window.location.pathname.split('/')[1];
+        window.location.href = localizePath(locale, '/login');
       }
     }
     return Promise.reject(error);

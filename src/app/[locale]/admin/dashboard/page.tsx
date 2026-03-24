@@ -68,6 +68,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import InfoIcon from '@mui/icons-material/Info';
 import { adminService } from '@/services/adminService';
 import DashboardCharts from '@/components/admin/DashboardCharts';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -101,8 +102,14 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+function getPaginationTotal(payload: any) {
+  return payload?.pagination?.total ?? payload?.total ?? 0;
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
+  const adminLoginPath = getLocalePath('/admin/login');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tabValue, setTabValue] = useState(0);
@@ -158,11 +165,11 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const adminToken = localStorage.getItem('adminToken');
     if (!adminToken) {
-      router.push('/admin/login');
+      router.push(adminLoginPath);
       return;
     }
     fetchDashboardData();
-  }, [router]);
+  }, [adminLoginPath, router]);
 
   // 검색어 변경 시 사용자 목록 리로드
   useEffect(() => {
@@ -184,7 +191,7 @@ export default function AdminDashboardPage() {
     try {
       const data = await adminService.getUsers(page, PAGE_SIZE, search);
       setUsers(data.users || []);
-      setUserTotal(data.total || 0);
+      setUserTotal(getPaginationTotal(data));
     } catch (error) {
       console.error('사용자 로딩 실패:', error);
     }
@@ -194,7 +201,7 @@ export default function AdminDashboardPage() {
     try {
       const data = await adminService.getCharacters(page, PAGE_SIZE, search);
       setCharacters(data.characters || []);
-      setCharacterTotal(data.total || 0);
+      setCharacterTotal(getPaginationTotal(data));
     } catch (error) {
       console.error('캐릭터 로딩 실패:', error);
     }
@@ -204,7 +211,7 @@ export default function AdminDashboardPage() {
     try {
       const data = await adminService.getPayments(page, PAGE_SIZE);
       setPayments(data.payments || []);
-      setPaymentTotal(data.total || 0);
+      setPaymentTotal(getPaginationTotal(data));
     } catch (error) {
       console.error('결제 로딩 실패:', error);
     }
@@ -256,11 +263,11 @@ export default function AdminDashboardPage() {
 
       setStats(statsData);
       setUsers(usersData.users || []);
-      setUserTotal(usersData.total || 0);
+      setUserTotal(getPaginationTotal(usersData));
       setCharacters(charactersData.characters || []);
-      setCharacterTotal(charactersData.total || 0);
+      setCharacterTotal(getPaginationTotal(charactersData));
       setPayments(paymentsData.payments || []);
-      setPaymentTotal(paymentsData.total || 0);
+      setPaymentTotal(getPaginationTotal(paymentsData));
       setTopCharacters(topData || []);
       setCreators(creatorsData.creators || []);
       setCreatorStats(creatorsData.levelStats || null);
@@ -277,7 +284,7 @@ export default function AdminDashboardPage() {
         setError('인증에 실패했습니다. 다시 로그인해주세요.');
         setTimeout(() => {
           localStorage.removeItem('adminToken');
-          router.push('/admin/login');
+          router.push(adminLoginPath);
         }, 2000);
       } else {
         setError('대시보드 데이터를 불러오는데 실패했습니다.');
@@ -289,7 +296,7 @@ export default function AdminDashboardPage() {
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
-    router.push('/admin/login');
+    router.push(adminLoginPath);
   };
 
   const handleToggleUserBlock = async (userId: string) => {
@@ -535,6 +542,63 @@ export default function AdminDashboardPage() {
     return labels[reason] || reason;
   };
 
+  const formatCompactCurrency = (value: number) =>
+    new Intl.NumberFormat('ko-KR', {
+      notation: value >= 10000 ? 'compact' : 'standard',
+      maximumFractionDigits: 1,
+    }).format(value);
+
+  const overviewCards = [
+    {
+      label: '총 사용자',
+      value: stats?.users?.total || 0,
+      helper: '현재 누적 가입자',
+      color: '#7cc7ff',
+      icon: <PeopleIcon sx={{ fontSize: 26 }} />,
+    },
+    {
+      label: '총 캐릭터',
+      value: stats?.characters?.total || 0,
+      helper: '운영 중인 캐릭터',
+      color: '#caa7ff',
+      icon: <SmartToyIcon sx={{ fontSize: 26 }} />,
+    },
+    {
+      label: '오늘 매출',
+      value: `₩${formatCompactCurrency(stats?.revenue?.today || 0)}`,
+      helper: '실시간 당일 수익',
+      color: '#ffbd66',
+      icon: <AttachMoneyIcon sx={{ fontSize: 26 }} />,
+    },
+    {
+      label: '최근 30일 매출',
+      value: `₩${formatCompactCurrency(stats?.revenue?.last30d || 0)}`,
+      helper: '월간 성장 흐름',
+      color: '#88ebb4',
+      icon: <TrendingUpIcon sx={{ fontSize: 26 }} />,
+    },
+    {
+      label: '대기 신고',
+      value: stats?.pendingReports || 0,
+      helper: '즉시 확인 필요',
+      color: '#ff8d8d',
+      icon: <ReportIcon sx={{ fontSize: 26 }} />,
+    },
+    {
+      label: '대기 정산',
+      value: stats?.pendingSettlements || 0,
+      helper: '처리 대기 건수',
+      color: '#ffd166',
+      icon: <AccountBalanceIcon sx={{ fontSize: 26 }} />,
+    },
+  ];
+
+  const operationBadges = [
+    `미처리 신고 ${stats?.pendingReports || 0}건`,
+    `정산 대기 ${stats?.pendingSettlements || 0}건`,
+    `파트너 ${creatorStats?.partner || 0}명`,
+  ];
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" bgcolor="#1a1a1a">
@@ -545,9 +609,11 @@ export default function AdminDashboardPage() {
 
   // 다크모드 스타일
   const darkCardStyle = {
-    bgcolor: 'rgba(255,255,255,0.03)',
+    bgcolor: 'rgba(12,16,25,0.82)',
     border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 3,
+    borderRadius: 5,
+    backdropFilter: 'blur(18px)',
+    boxShadow: '0 24px 60px rgba(2,6,23,0.34)',
   };
 
   const darkTableStyle = {
@@ -561,6 +627,7 @@ export default function AdminDashboardPage() {
     },
     '& .MuiTableBody-root': {
       '& .MuiTableRow-root': {
+        transition: 'background-color 0.2s ease',
         '&:hover': {
           bgcolor: 'rgba(255,255,255,0.03)',
         },
@@ -573,133 +640,183 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#1a1a1a' }}>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* 헤더 */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Box>
-            <Typography variant="h4" fontWeight="bold" color="#fff" gutterBottom>
-              관리자 대시보드
-            </Typography>
-            <Typography variant="body2" color="rgba(255,255,255,0.6)">
-              몽글AI 시스템 관리
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            startIcon={<ExitToAppIcon />}
-            onClick={handleLogout}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: '#090b12',
+        background:
+          'radial-gradient(circle at top left, rgba(255,94,98,0.16), transparent 28%), radial-gradient(circle at 88% 10%, rgba(33,150,243,0.12), transparent 24%), linear-gradient(180deg, #121620 0%, #090b12 100%)',
+      }}
+    >
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 4.5 } }}>
+        <Card
+          sx={{
+            ...darkCardStyle,
+            mb: 3.5,
+            overflow: 'hidden',
+            position: 'relative',
+            background:
+              'linear-gradient(135deg, rgba(255,94,98,0.26) 0%, rgba(255,94,98,0.12) 24%, rgba(15,23,42,0.9) 58%, rgba(124,199,255,0.14) 100%)',
+          }}
+        >
+          <Box
             sx={{
-              borderColor: 'rgba(255,94,98,0.5)',
-              color: '#ff5e62',
-              '&:hover': {
-                borderColor: '#ff5e62',
-                bgcolor: 'rgba(255,94,98,0.1)',
-              }
+              position: 'absolute',
+              inset: 0,
+              background:
+                'linear-gradient(120deg, rgba(255,255,255,0.08), transparent 32%, transparent 60%, rgba(255,255,255,0.04) 100%)',
+              pointerEvents: 'none',
             }}
-          >
-            로그아웃
-          </Button>
-        </Box>
+          />
+          <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+            <Stack spacing={3}>
+              <Stack
+                direction={{ xs: 'column', md: 'row' }}
+                spacing={2}
+                justifyContent="space-between"
+                alignItems={{ xs: 'flex-start', md: 'center' }}
+              >
+                <Box>
+                  <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.64)', letterSpacing: 1.8 }}>
+                    MONGLAI CONTROL CENTER
+                  </Typography>
+                  <Typography variant="h3" fontWeight={800} color="#fff" sx={{ lineHeight: 1.08 }}>
+                    관리자 대시보드
+                  </Typography>
+                  <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ mt: 1.2, maxWidth: 720 }}>
+                    운영 지표, 리스크, 수익, 관리 대기열을 한 화면에서 빠르게 확인할 수 있도록 상단 정보를 재구성했습니다.
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  startIcon={<ExitToAppIcon />}
+                  onClick={handleLogout}
+                  sx={{
+                    borderRadius: '12px',
+                    borderColor: 'rgba(255,255,255,0.2)',
+                    color: '#fff',
+                    px: 2.2,
+                    '&:hover': {
+                      borderColor: '#ff5e62',
+                      bgcolor: 'rgba(255,94,98,0.08)',
+                    },
+                  }}
+                >
+                  로그아웃
+                </Button>
+              </Stack>
 
-        {/* 통계 카드 */}
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">총 사용자</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#fff">
-                      {stats?.users?.total || 0}
-                    </Typography>
-                  </Box>
-                  <PeopleIcon sx={{ color: '#2196f3', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">총 캐릭터</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#fff">
-                      {stats?.characters?.total || 0}
-                    </Typography>
-                  </Box>
-                  <SmartToyIcon sx={{ color: '#9c27b0', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">오늘 매출</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#ff5e62">
-                      ₩{(stats?.revenue?.today || 0).toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <AttachMoneyIcon sx={{ color: '#ff9800', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">월 매출</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#4caf50">
-                      ₩{(stats?.revenue?.last30d || 0).toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <TrendingUpIcon sx={{ color: '#4caf50', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">대기 신고</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#f44336">
-                      {stats?.pendingReports || 0}
-                    </Typography>
-                  </Box>
-                  <ReportIcon sx={{ color: '#f44336', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={4} md={2}>
-            <Card sx={darkCardStyle}>
-              <CardContent sx={{ py: 2 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Box>
-                    <Typography variant="caption" color="rgba(255,255,255,0.6)">대기 정산</Typography>
-                    <Typography variant="h5" fontWeight="bold" color="#ff9800">
-                      {stats?.pendingSettlements || 0}
-                    </Typography>
-                  </Box>
-                  <AccountBalanceIcon sx={{ color: '#ff9800', fontSize: 28 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {operationBadges.map((badge) => (
+                  <Chip
+                    key={badge}
+                    label={badge}
+                    sx={{
+                      borderRadius: '12px',
+                      bgcolor: 'rgba(255,255,255,0.06)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      fontWeight: 700,
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+
+        <Grid container spacing={2.2} sx={{ mb: 3.5 }}>
+          {overviewCards.map((card) => (
+            <Grid item xs={6} sm={4} md={2} key={card.label}>
+              <Card
+                sx={{
+                  ...darkCardStyle,
+                  height: '100%',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'transform 0.2s ease, border-color 0.2s ease',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    borderColor: `${card.color}66`,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: `radial-gradient(circle at top right, ${card.color}18, transparent 44%)`,
+                    pointerEvents: 'none',
+                  }}
+                />
+                <CardContent sx={{ py: 2.2, px: 2.2 }}>
+                  <Stack spacing={1.8}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Avatar
+                        sx={{
+                          width: 42,
+                          height: 42,
+                          bgcolor: `${card.color}20`,
+                          color: card.color,
+                          border: `1px solid ${card.color}38`,
+                        }}
+                      >
+                        {card.icon}
+                      </Avatar>
+                      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.52)' }}>
+                        Live
+                      </Typography>
+                    </Stack>
+                    <Box>
+                      <Typography variant="caption" color="rgba(255,255,255,0.6)">
+                        {card.label}
+                      </Typography>
+                      <Typography variant="h5" fontWeight="bold" color="#fff" sx={{ mt: 0.4, lineHeight: 1.1 }}>
+                        {card.value}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.52)' }}>
+                        {card.helper}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
 
-        {/* 차트 섹션 */}
-        <DashboardCharts />
+        <Card sx={{ ...darkCardStyle, mb: 3, overflow: 'hidden' }}>
+          <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', md: 'center' }}
+              sx={{ mb: 2 }}
+            >
+              <Box>
+                <Typography variant="h5" fontWeight={800} sx={{ color: '#fff' }}>
+                  운영 차트
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                  핵심 지표를 요약 카드 아래에 분리해서 시선 이동을 줄였습니다.
+                </Typography>
+              </Box>
+              <Chip
+                label="실시간 모니터링"
+                sx={{
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(124,199,255,0.12)',
+                  color: '#7cc7ff',
+                  border: '1px solid rgba(124,199,255,0.18)',
+                  fontWeight: 700,
+                }}
+              />
+            </Stack>
+            <DashboardCharts />
+          </CardContent>
+        </Card>
 
-        {/* 탭 메뉴 */}
         <Paper sx={{ ...darkCardStyle, overflow: 'hidden' }}>
           <Tabs
             value={tabValue}
@@ -707,11 +824,23 @@ export default function AdminDashboardPage() {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
+              px: 1.5,
+              pt: 1.5,
               bgcolor: 'rgba(255,255,255,0.02)',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
-              '& .MuiTab-root': { color: 'rgba(255,255,255,0.5)', minWidth: 100 },
-              '& .Mui-selected': { color: '#ff5e62 !important' },
-              '& .MuiTabs-indicator': { bgcolor: '#ff5e62' },
+              '& .MuiTab-root': {
+                color: 'rgba(255,255,255,0.5)',
+                minWidth: 108,
+                minHeight: 52,
+                borderRadius: '12px',
+                mx: 0.4,
+                transition: 'background-color 0.2s ease, color 0.2s ease',
+              },
+              '& .Mui-selected': {
+                color: '#fff !important',
+                bgcolor: 'rgba(255,94,98,0.18)',
+              },
+              '& .MuiTabs-indicator': { display: 'none' },
             }}
           >
             <Tab icon={<PeopleIcon />} label="사용자" iconPosition="start" />

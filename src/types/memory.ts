@@ -1,3 +1,5 @@
+export type MemoryType = 'summary' | 'event';
+
 // 메모리 요약 인터페이스
 export interface MemorySummary {
   _id: string;
@@ -7,6 +9,8 @@ export interface MemorySummary {
     end: number;
   };
   summaryText: string;
+  memoryType?: MemoryType;
+  eventCategory?: string;
   keyEvents: string[];
   emotionalTone?: string;
   characterMentions: Record<string, number>;
@@ -18,7 +22,9 @@ export interface MemorySummary {
 // 메모리 통계
 export interface MemoryStats {
   summaryCount: number;
+  eventCount: number;
   latestSummaryRange: { start: number; end: number } | null;
+  latestEventRange: { start: number; end: number } | null;
 }
 
 // 노트 대상 타입

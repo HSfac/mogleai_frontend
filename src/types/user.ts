@@ -3,6 +3,42 @@ export enum CreatorLevel {
   LEVEL1 = 'level1',
   LEVEL2 = 'level2',
   LEVEL3 = 'level3',
+  PARTNER = 'partner',
+}
+
+export interface CreatorProgress {
+  currentLevel: CreatorLevel;
+  currentLabel: string;
+  nextLevel?: CreatorLevel | null;
+  nextLabel?: string | null;
+  nextRequirement?: string | null;
+  currentConversations: number;
+  remainingConversations: number;
+  progressPercent: number;
+  earningRatePercent: number;
+  maxCharacters?: number | null;
+  activeCharacterCount?: number;
+  remainingCharacterSlots?: number | null;
+}
+
+export interface CreatorProfile {
+  _id: string;
+  username: string;
+  profileImage?: string;
+  creatorLevel: CreatorLevel;
+  totalConversations: number;
+  popularCharacters: number;
+  createdAt: string;
+  stats: {
+    totalCharacterCount: number;
+    publicCharacterCount: number;
+    verifiedCharacterCount: number;
+    totalLikes: number;
+    totalUsage: number;
+    totalTokenEarnings: number;
+    followerCount: number;
+  };
+  creatorProgress: CreatorProgress;
 }
 
 // 사용자 인터페이스 정의
@@ -17,6 +53,7 @@ export interface User {
   popularCharacters: number;
   createdCharacters: string[];
   favoriteCharacters: string[];
+  followingCreators?: string[];
   isSubscribed: boolean;
   subscriptionEndDate?: string;
   isVerified: boolean;
@@ -25,6 +62,7 @@ export interface User {
   isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
+  creatorProgress?: CreatorProgress;
 }
 
 // 채팅 모드 enum
@@ -41,6 +79,8 @@ export interface SessionState {
   scene: string;
   progressCounter: number;
   lastSceneSummary?: string;
+  activeFlags?: string[];
+  currentObjective?: string;
 }
 
 // 채팅 인터페이스 정의

@@ -28,11 +28,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { characterService } from '@/services/character.service';
 import { Character } from '@/types/character';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 const popularSearches = ['연애', '직장', '상담', '판타지', '게임', '학교'];
 
 export default function SearchPage() {
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -385,7 +387,7 @@ export default function SearchPage() {
                         borderColor: 'primary.main',
                       },
                     }}
-                    onClick={() => router.push(`/characters/${character._id}`)}
+                    onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Stack direction="row" spacing={2} alignItems="flex-start" mb={2}>
@@ -430,7 +432,23 @@ export default function SearchPage() {
                               />
                             )}
                           </Stack>
-                          <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            fontWeight={500}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (character.creator?._id) {
+                                router.push(getLocalePath(`/creators/${character.creator._id}`));
+                              }
+                            }}
+                            sx={{
+                              cursor: character.creator?._id ? 'pointer' : 'default',
+                              '&:hover': character.creator?._id
+                                ? { color: 'primary.main' }
+                                : undefined,
+                            }}
+                          >
                             @{character.creator?.username || '알 수 없음'}
                           </Typography>
                         </Box>

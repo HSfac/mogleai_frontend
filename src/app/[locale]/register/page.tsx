@@ -114,7 +114,7 @@ export default function RegisterPage() {
             zIndex: 10,
           }}
         >
-          <Link href="/" passHref style={{ textDecoration: 'none' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
             <Button
               variant="outlined"
               startIcon={<HomeIcon />}
@@ -250,16 +250,12 @@ export default function RegisterPage() {
                 }
                 label={
                   <Typography variant="body2" sx={{ color: '#999' }}>
-                    <Link href="/terms" passHref legacyBehavior>
-                      <MuiLink component="a" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                        이용약관
-                      </MuiLink>
-                    </Link>{' '}및{' '}
-                    <Link href="/privacy" passHref legacyBehavior>
-                      <MuiLink component="a" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                        개인정보처리방침
-                      </MuiLink>
-                    </Link>에 동의합니다.
+                    <MuiLink component={Link} href="/terms" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                      이용약관
+                    </MuiLink>{' '}및{' '}
+                    <MuiLink component={Link} href="/privacy" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                      개인정보처리방침
+                    </MuiLink>에 동의합니다.
                   </Typography>
                 }
               />
@@ -339,11 +335,9 @@ export default function RegisterPage() {
 
               <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 이미 계정이 있으신가요?{' '}
-                <Link href="/login" passHref legacyBehavior>
-                  <MuiLink component="a" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                    로그인하기
-                  </MuiLink>
-                </Link>
+                <MuiLink component={Link} href="/login" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                  로그인하기
+                </MuiLink>
               </Typography>
             </Box>
           </Box>

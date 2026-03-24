@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -19,9 +18,10 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { adminService } from '@/services/adminService';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
+  const { push } = useLocaleNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
 
     try {
       await adminService.login(email, password);
-      router.push('/admin/dashboard');
+      push('/admin/dashboard');
     } catch (err: any) {
       console.error('로그인 실패:', err);
       const message = err.response?.data?.message || '로그인에 실패했습니다.';

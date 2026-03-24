@@ -1,5 +1,24 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
+:root {
+  --bg-base: #090b12;
+  --bg-panel: rgba(18, 22, 34, 0.78);
+  --bg-panel-strong: rgba(12, 16, 27, 0.92);
+  --line-soft: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --text-primary: #f6f7fb;
+  --text-secondary: rgba(240, 242, 250, 0.72);
+  --accent-primary: #ff5f9b;
+  --accent-secondary: #ff9ec2;
+  --accent-cool: #7cc7ff;
+  --shadow-soft: 0 24px 60px rgba(3, 7, 18, 0.38);
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
@@ -12,8 +31,26 @@ body {
   height: 100%;
   overflow-x: hidden;
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  background: #1a1a1a;
-  color: #e0e0e0;
+  background:
+    radial-gradient(circle at top left, rgba(255, 95, 155, 0.18), transparent 28%),
+    radial-gradient(circle at 85% 12%, rgba(124, 199, 255, 0.14), transparent 24%),
+    linear-gradient(180deg, #11131b 0%, #0a0c13 52%, #070910 100%);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black, transparent 86%);
+  opacity: 0.18;
+  z-index: 0;
 }
 
 #__next {
@@ -24,6 +61,11 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+::selection {
+  background: rgba(255, 95, 155, 0.3);
+  color: #fff;
 }
 
 /* 다크 모드 스크롤바 */
@@ -90,7 +132,7 @@ a {
 
 .character-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;

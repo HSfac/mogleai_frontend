@@ -24,7 +24,7 @@ import {
   Grow,
   keyframes,
 } from '@mui/material';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import SendIcon from '@mui/icons-material/Send';
@@ -48,6 +48,7 @@ import { characterService } from '@/services/character.service';
 import { ChatMode, SessionState } from '@/types/user';
 import MemoryPanel from '@/components/memory/MemoryPanel';
 import HistoryIcon from '@mui/icons-material/History';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 // 새로운 분위기 시스템 import
 import {
@@ -55,7 +56,6 @@ import {
   MoodBackground,
   useMood,
   useMoodBubbleStyle,
-  MoodType,
 } from '@/components/chat/MoodSystem';
 import { EmotionText } from '@/components/chat/EmotionText';
 import { IntimacyGauge } from '@/components/chat/IntimacyGauge';
@@ -261,6 +261,53 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   );
 };
 
+function HeaderMetric({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  color: string;
+}) {
+  return (
+    <Box
+      sx={{
+        px: 1.4,
+        py: 1,
+        borderRadius: '12px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 1,
+        bgcolor: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        minWidth: { xs: 'auto', md: 140 },
+      }}
+    >
+      <Avatar
+        sx={{
+          width: 28,
+          height: 28,
+          bgcolor: `${color}24`,
+          color,
+        }}
+      >
+        {icon}
+      </Avatar>
+      <Box>
+        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.52)', display: 'block', lineHeight: 1.1 }}>
+          {label}
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#fff', fontWeight: 700, lineHeight: 1.15 }}>
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 // 메인 채팅 컨텐츠 컴포넌트
 interface ChatContentProps {
   id: string;
@@ -271,6 +318,7 @@ interface ChatContentProps {
 
 const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character }) => {
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
   const { theme, mood, setIntimacyLevel, setExcitementLevel, intimacyLevel, excitementLevel } = useMood();
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -300,6 +348,41 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
     const aiCount = chat.messages.filter((msg) => msg.sender === 'ai').length;
     return { user: userCount, ai: aiCount };
   }, [chat]);
+
+  const deriveGaugeFromSessionState = (state?: SessionState) => {
+    if (!state) {
+      return { intimacy: 0, excitement: 0 };
+    }
+
+    const moodValue = state.mood || '';
+    const moodExcitementMap: Record<string, number> = {
+      갈등: 68,
+      긴장: 62,
+      설렘: 56,
+      친밀: 74,
+      유쾌: 42,
+      진지: 36,
+      평온: 24,
+    };
+    const moodIntimacyBonus = moodValue.includes('친밀')
+      ? 12
+      : moodValue.includes('설렘')
+        ? 8
+        : 0;
+
+    return {
+      intimacy: Math.min(100, state.relationshipLevel * 22 + moodIntimacyBonus),
+      excitement: Math.min(
+        100,
+        (moodExcitementMap[moodValue] ?? 32) + Math.max(0, state.progressCounter - 1) * 6,
+      ),
+    };
+  };
+
+  const getRelationshipLabel = (relationshipLevel?: number) => {
+    const labels = ['낯섦', '관심', '친해짐', '가까움', '친밀', '깊은 유대'];
+    return labels[Math.max(0, Math.min(relationshipLevel ?? 0, 5))];
+  };
 
   // 메시지에서 분위기 분석
   const analyzeMessageMood = (content: string) => {
@@ -337,6 +420,16 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
       streamRef.current?.cancel();
     };
   }, []);
+
+  useEffect(() => {
+    if (!chat?.sessionState) {
+      return;
+    }
+
+    const nextGauge = deriveGaugeFromSessionState(chat.sessionState);
+    setIntimacyLevel(nextGauge.intimacy);
+    setExcitementLevel(nextGauge.excitement);
+  }, [chat?.sessionState, setExcitementLevel, setIntimacyLevel]);
 
   // 시나리오 카드 트리거 (특정 조건에서)
   useEffect(() => {
@@ -397,25 +490,40 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
           return { ...prev, messages: updated };
         });
       },
-      onDone: (payload?: { suggestedReplies?: string[] }) => {
+      onDone: (payload?: {
+        reply?: string;
+        suggestedReplies?: string[];
+        state?: SessionState;
+      }) => {
+        const finalReply = payload?.reply || fullResponse;
+
         // AI 응답 분석해서 게이지 업데이트
-        const { intimacyBoost, excitementBoost } = analyzeMessageMood(fullResponse);
+        const { intimacyBoost, excitementBoost } = analyzeMessageMood(finalReply);
         setIntimacyLevel(Math.min(100, intimacyLevel + intimacyBoost * 1.5));
         setExcitementLevel(Math.min(100, excitementLevel + excitementBoost * 1.5));
+        setChat((prev) => {
+          if (!prev) return prev;
 
-        if (payload?.suggestedReplies && payload.suggestedReplies.length > 0) {
-          setChat((prev) => {
-            if (!prev) return prev;
-            const updated = [...prev.messages];
-            if (updated.length > 0 && updated[updated.length - 1]?.sender === 'ai') {
-              updated[updated.length - 1] = {
-                ...updated[updated.length - 1],
-                suggestedReplies: payload.suggestedReplies,
-              };
-            }
-            return { ...prev, messages: updated };
-          });
-        }
+          const updated = [...prev.messages];
+          if (updated.length > 0 && updated[updated.length - 1]?.sender === 'ai') {
+            updated[updated.length - 1] = {
+              ...updated[updated.length - 1],
+              content: finalReply,
+              timestamp: new Date(),
+              suggestedReplies:
+                payload?.suggestedReplies && payload.suggestedReplies.length > 0
+                  ? payload.suggestedReplies
+                  : updated[updated.length - 1].suggestedReplies,
+            };
+          }
+
+          return {
+            ...prev,
+            messages: updated,
+            sessionState: payload?.state ?? prev.sessionState,
+          };
+        });
+
         setIsSending(false);
       },
       onError: (err) => {
@@ -458,7 +566,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
     setAnchorEl(null);
     try {
       await chatService.deleteChat(id);
-      router.push('/');
+      router.push(getLocalePath('/'));
     } catch (deleteError: any) {
       setError('채팅 삭제에 실패했습니다.');
     }
@@ -484,6 +592,17 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
   const ModeIcon = currentModeConfig?.icon || ChatBubbleOutlineIcon;
   const lastAiMessage = chat?.messages.filter((m) => m.sender === 'ai').slice(-1)[0];
   const suggestedReplies = lastAiMessage?.suggestedReplies || [];
+  const chemistryScore = Math.round((intimacyLevel + excitementLevel) / 2);
+  const currentScene = chat.sessionState?.scene?.trim() || '장면 미설정';
+  const relationshipLabel = getRelationshipLabel(chat.sessionState?.relationshipLevel);
+  const quickOpeners = useMemo(
+    () => [
+      `${character.name}, 오늘은 어떤 기분이야?`,
+      `우리 지금 분위기 어때?`,
+      `네가 먼저 하고 싶은 이야기를 들려줘.`,
+    ],
+    [character.name],
+  );
 
   return (
     <MoodBackground>
@@ -499,66 +618,257 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
         <Container maxWidth={isFullscreen ? false : 'lg'} sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* 상단 컨트롤 바 */}
           {!isFullscreen && (
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-              {/* 캐릭터 정보 */}
-              <Stack direction="row" alignItems="center" gap={2}>
-                <Avatar
-                  src={character.profileImage || character.imageUrl}
+            <Box
+              sx={{
+                mb: 2,
+                p: { xs: 2, md: 2.4 },
+                borderRadius: 5,
+                border: `1px solid ${theme.accentColor}24`,
+                background:
+                  'linear-gradient(180deg, rgba(9,12,22,0.82), rgba(9,12,22,0.68))',
+                backdropFilter: 'blur(18px)',
+                boxShadow: '0 24px 60px rgba(2,6,23,0.26)',
+              }}
+            >
+              <Stack spacing={2}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'flex-start', md: 'center' }}
+                  spacing={2}
+                >
+                  <Stack direction="row" alignItems="center" gap={2}>
+                    <Avatar
+                      src={character.profileImage || character.imageUrl}
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        border: `2px solid ${theme.accentColor}`,
+                        boxShadow: `0 0 26px ${theme.accentColor}36`,
+                      }}
+                    >
+                      {character.name[0]}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" useFlexGap sx={{ mb: 0.7 }}>
+                        <Chip
+                          size="small"
+                          icon={<ModeIcon sx={{ fontSize: 14, color: `${currentModeConfig?.color} !important` }} />}
+                          label={currentModeConfig?.label}
+                          onClick={(e) => setModeAnchorEl(e.currentTarget)}
+                          sx={{
+                            bgcolor: `${currentModeConfig?.color}24`,
+                            color: currentModeConfig?.color,
+                            cursor: 'pointer',
+                            height: 26,
+                            border: `1px solid ${currentModeConfig?.color}35`,
+                          }}
+                        />
+                        <Chip
+                          size="small"
+                          icon={<SmartToyIcon sx={{ fontSize: 14 }} />}
+                          label={chat.aiModel}
+                          sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', height: 26 }}
+                        />
+                        {character.isAdultContent && (
+                          <Chip
+                            size="small"
+                            label="성인 모드"
+                            sx={{ bgcolor: 'rgba(255,95,155,0.15)', color: '#ff9ec2', height: 26 }}
+                          />
+                        )}
+                      </Stack>
+                      <Typography variant="h5" fontWeight={800} sx={{ color: '#fff', lineHeight: 1.1 }}>
+                        {character.name}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: 'rgba(255,255,255,0.66)',
+                          mt: 0.8,
+                          maxWidth: 540,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {character.description}
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Stack direction="row" alignItems="center" gap={1}>
+                    <IconButton
+                      onClick={() => setShowGauge(!showGauge)}
+                      sx={{
+                        color: showGauge ? theme.accentColor : 'rgba(255,255,255,0.5)',
+                        bgcolor: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <LocalFireDepartmentIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      sx={{
+                        color: 'rgba(255,255,255,0.76)',
+                        bgcolor: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+                    </IconButton>
+                    <IconButton
+                      onClick={(e) => setAnchorEl(e.currentTarget)}
+                      sx={{
+                        color: 'rgba(255,255,255,0.76)',
+                        bgcolor: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  </Stack>
+                </Stack>
+
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.2} alignItems={{ xs: 'stretch', md: 'center' }}>
+                  <HeaderMetric
+                    icon={<FavoriteIcon sx={{ fontSize: 16 }} />}
+                    label="친밀도"
+                    value={`${intimacyLevel}%`}
+                    color={theme.accentColor}
+                  />
+                  <HeaderMetric
+                    icon={<LocalFireDepartmentIcon sx={{ fontSize: 16 }} />}
+                    label="흥분도"
+                    value={`${excitementLevel}%`}
+                    color="#ffb45f"
+                  />
+                  <HeaderMetric
+                    icon={<MoodIcon sx={{ fontSize: 16 }} />}
+                    label="분위기"
+                    value={chat.sessionState?.mood || (mood === 'romantic' ? 'Romantic' : mood)}
+                    color="#7cc7ff"
+                  />
+                  <HeaderMetric
+                    icon={<PersonIcon sx={{ fontSize: 16 }} />}
+                    label="관계"
+                    value={`${relationshipLabel} · Lv.${chat.sessionState?.relationshipLevel ?? 0}`}
+                    color="#ffd166"
+                  />
+                  <HeaderMetric
+                    icon={<ChatBubbleOutlineIcon sx={{ fontSize: 16 }} />}
+                    label="메시지"
+                    value={`${messageStats.user + messageStats.ai}`}
+                    color="rgba(255,255,255,0.9)"
+                  />
+                </Stack>
+
+                <Box
                   sx={{
-                    width: 48,
-                    height: 48,
-                    border: `2px solid ${theme.accentColor}`,
-                    boxShadow: `0 0 20px ${theme.accentColor}40`,
+                    p: 1.4,
+                    borderRadius: 3,
+                    bgcolor: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  {character.name[0]}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight={700} sx={{ color: '#fff' }}>
-                    {character.name}
-                  </Typography>
-                  <Stack direction="row" alignItems="center" gap={1}>
-                    <Chip
-                      size="small"
-                      icon={<ModeIcon sx={{ fontSize: 14, color: `${currentModeConfig?.color} !important` }} />}
-                      label={currentModeConfig?.label}
-                      onClick={(e) => setModeAnchorEl(e.currentTarget)}
-                      sx={{
-                        bgcolor: `${currentModeConfig?.color}30`,
-                        color: currentModeConfig?.color,
-                        cursor: 'pointer',
-                        height: 24,
-                      }}
-                    />
-                    <Chip
-                      size="small"
-                      icon={<SmartToyIcon sx={{ fontSize: 14 }} />}
-                      label={chat.aiModel}
-                      sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', height: 24 }}
-                    />
+                  <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1.5}>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.68)' }}>
+                      {currentModeConfig?.description} · 캐릭터 컨텍스트와 현재 텐션이 상단에 항상 보이도록 정리했습니다.
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>
+                      분위기 점수 {chemistryScore} / 100
+                    </Typography>
                   </Stack>
+                  <LinearProgress
+                    variant="determinate"
+                    value={chemistryScore}
+                    sx={{
+                      mt: 1.2,
+                      height: 8,
+                      borderRadius: '12px',
+                      bgcolor: 'rgba(255,255,255,0.08)',
+                      '& .MuiLinearProgress-bar': {
+                        borderRadius: '12px',
+                        background: `linear-gradient(90deg, ${theme.accentColor} 0%, #ffbf6b 100%)`,
+                      },
+                    }}
+                  />
+                  <Stack
+                    direction={{ xs: 'column', md: 'row' }}
+                    spacing={1.5}
+                    sx={{ mt: 1.3, color: 'rgba(255,255,255,0.58)' }}
+                  >
+                    <Typography variant="caption">
+                      현재 장면 · {currentScene}
+                    </Typography>
+                    <Typography variant="caption">
+                      세션 진행 · {chat.sessionState?.progressCounter ?? 1}/5
+                    </Typography>
+                    {chat.sessionState?.lastSceneSummary ? (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        최근 흐름 · {chat.sessionState.lastSceneSummary}
+                      </Typography>
+                    ) : null}
+                    {chat.sessionState?.currentObjective ? (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        현재 목표 · {chat.sessionState.currentObjective}
+                      </Typography>
+                    ) : null}
+                  </Stack>
+                  {chat.sessionState?.activeFlags && chat.sessionState.activeFlags.length > 0 ? (
+                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1.2 }}>
+                      {chat.sessionState.activeFlags.slice(0, 3).map((flag) => (
+                        <Chip
+                          key={flag}
+                          label={flag}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(255,255,255,0.06)',
+                            color: 'rgba(255,255,255,0.78)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  ) : null}
                 </Box>
-              </Stack>
 
-              {/* 우측 컨트롤 */}
-              <Stack direction="row" alignItems="center" gap={1}>
-                <IconButton
-                  onClick={() => setShowGauge(!showGauge)}
-                  sx={{ color: showGauge ? theme.accentColor : 'rgba(255,255,255,0.5)' }}
-                >
-                  <LocalFireDepartmentIcon />
-                </IconButton>
-                <IconButton
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  sx={{ color: 'rgba(255,255,255,0.7)' }}
-                >
-                  {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-                </IconButton>
-                <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                  <MoreVertIcon />
-                </IconButton>
+                {character.tags && character.tags.length > 0 && (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {character.tags.slice(0, 5).map((tag) => (
+                      <Chip
+                        key={tag}
+                        label={`#${tag}`}
+                        size="small"
+                        sx={{
+                          bgcolor: 'rgba(255,255,255,0.04)',
+                          color: 'rgba(255,255,255,0.74)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                )}
               </Stack>
-            </Stack>
+            </Box>
           )}
 
           {/* 모드 메뉴 */}
@@ -607,7 +917,16 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 
           {/* 메모리 패널 */}
           <Collapse in={showMemoryPanel}>
-            <Box sx={{ mb: 2, bgcolor: 'rgba(0,0,0,0.3)', borderRadius: 3, p: 2 }}>
+            <Box
+              sx={{
+                mb: 2,
+                bgcolor: 'rgba(6,10,20,0.46)',
+                borderRadius: 4,
+                p: 2,
+                border: '1px solid rgba(255,255,255,0.06)',
+                boxShadow: '0 18px 36px rgba(2,6,23,0.2)',
+              }}
+            >
               <MemoryPanel chatId={id} characterId={chat.character} />
             </Box>
           </Collapse>
@@ -617,13 +936,17 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
             sx={{
               flex: 1,
               overflowY: 'auto',
-              px: 1,
+              px: { xs: 0.4, md: 1.2 },
               py: 2,
               display: 'flex',
               flexDirection: 'column',
               gap: 0.5,
               minHeight: isFullscreen ? 'calc(100vh - 120px)' : '50vh',
               maxHeight: isFullscreen ? 'calc(100vh - 120px)' : '60vh',
+              borderRadius: 5,
+              border: '1px solid rgba(255,255,255,0.06)',
+              background: 'linear-gradient(180deg, rgba(9,12,22,0.52), rgba(9,12,22,0.28))',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
               '&::-webkit-scrollbar': { width: 6 },
               '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
               '&::-webkit-scrollbar-thumb': { bgcolor: `${theme.accentColor}50`, borderRadius: 3 },
@@ -656,8 +979,26 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                   {character.name}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 300 }}>
-                  대화를 시작해보세요...
+                  대화를 시작해보세요. 아래 추천 오프너를 누르면 바로 입력창에 들어갑니다.
                 </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="center" sx={{ mt: 2.5, maxWidth: 560 }}>
+                  {quickOpeners.map((opener) => (
+                    <Chip
+                      key={opener}
+                      label={opener}
+                      onClick={() => setMessage(opener)}
+                      sx={{
+                        bgcolor: `${theme.accentColor}14`,
+                        color: '#fff',
+                        border: `1px solid ${theme.accentColor}30`,
+                        px: 0.6,
+                        '&:hover': {
+                          bgcolor: `${theme.accentColor}22`,
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
               </Box>
             ) : (
               chat.messages.map((msg, index) => {
@@ -715,12 +1056,22 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
           <Box
             sx={{
               p: 2,
-              borderRadius: 4,
-              bgcolor: 'rgba(0,0,0,0.4)',
+              mt: 1.5,
+              borderRadius: 5,
+              bgcolor: 'rgba(6,10,20,0.62)',
               backdropFilter: 'blur(20px)',
-              border: `1px solid ${theme.accentColor}30`,
+              border: `1px solid ${theme.accentColor}28`,
+              boxShadow: '0 26px 44px rgba(2,6,23,0.3)',
             }}
           >
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" spacing={1} sx={{ mb: 1.4 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.64)' }}>
+                {character.name}의 톤을 유지하면서 자연스럽게 이어서 대화하세요.
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.48)' }}>
+                Enter 전송 · Shift+Enter 줄바꿈
+              </Typography>
+            </Stack>
             <Stack direction="row" spacing={1.5} alignItems="flex-end">
               <TextField
                 fullWidth
@@ -773,6 +1124,14 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                 {isSending ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : <SendIcon />}
               </Button>
             </Stack>
+            <Stack direction="row" justifyContent="space-between" spacing={1} sx={{ mt: 1.3 }}>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.42)' }}>
+                추천 응답은 스토리 모드에서 마지막 AI 메시지 아래 표시됩니다.
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.42)' }}>
+                {message.length}/4000
+              </Typography>
+            </Stack>
           </Box>
         </Container>
 
@@ -806,6 +1165,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
   const { user, isAuthenticated, openLoginModal } = useAuth();
   const [chat, setChat] = useState<Chat | null>(null);
   const [character, setCharacter] = useState<Character | null>(null);
@@ -814,7 +1174,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      openLoginModal('채팅을 이용하려면 로그인이 필요해요', `/chat/${id}`);
+      openLoginModal('채팅을 이용하려면 로그인이 필요해요', getLocalePath(`/chat/${id}`));
       setIsLoading(false);
       return;
     }
@@ -835,7 +1195,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     };
 
     fetchData();
-  }, [id, isAuthenticated, router, openLoginModal]);
+  }, [getLocalePath, id, isAuthenticated, router, openLoginModal]);
 
   if (isLoading) {
     return (
@@ -861,7 +1221,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             <Button
               variant="contained"
               sx={{ mt: 3, bgcolor: '#ff5f9b' }}
-              onClick={() => openLoginModal('채팅을 이용하려면 로그인이 필요해요', `/chat/${id}`)}
+              onClick={() => openLoginModal('채팅을 이용하려면 로그인이 필요해요', getLocalePath(`/chat/${id}`))}
             >
               로그인하기
             </Button>
@@ -885,7 +1245,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             <Button
               variant="contained"
               sx={{ mt: 3, bgcolor: '#ff5f9b' }}
-              onClick={() => router.push('/characters')}
+              onClick={() => router.push(getLocalePath('/characters'))}
             >
               캐릭터 탐색하기
             </Button>

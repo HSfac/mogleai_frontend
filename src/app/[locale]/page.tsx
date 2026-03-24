@@ -13,13 +13,8 @@ import {
   Chip,
   CircularProgress,
   Avatar,
-  CardMedia,
   alpha,
 } from '@mui/material';
-import BoltIcon from '@mui/icons-material/Bolt';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -30,46 +25,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-const featureHighlights = [
-  {
-    title: 'AI 모델 선택',
-    description: 'GPT-4, Claude 3, Mistral을 하나의 인터페이스에서 자유롭게 전환합니다.',
-    icon: <BoltIcon />,
-  },
-  {
-    title: '크리에이터 리워드',
-    description: '인기 캐릭터 제작자는 토큰 수익을 자동 분배받으며 레벨업 혜택을 확보합니다.',
-    icon: <AutoAwesomeIcon />,
-  },
-  {
-    title: '실시간 분석',
-    description: '대화량, 좋아요, 수익 통계를 리더보드에서 한눈에 확인하세요.',
-    icon: <BarChartIcon />,
-  },
-  {
-    title: '토큰 기반 결제',
-    description: '토스 페이먼츠와 자동 구독으로 충전 흐름을 매끄럽게 유지합니다.',
-    icon: <RocketLaunchIcon />,
-  },
-];
-
-const trendingTags = [
-  '감성 상담',
-  '서스펜스 추리',
-  '가상 연애',
-  '코딩 멘토',
-  '여행 가이드',
-];
-
 export default function HomePage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations();
   const [popularCharacters, setPopularCharacters] = useState<any[]>([]);
   const [latestCharacters, setLatestCharacters] = useState<any[]>([]);
+  const [followingFeed, setFollowingFeed] = useState<any[]>([]);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [followingFeedLoading, setFollowingFeedLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
   // Extract locale from pathname
@@ -98,6 +64,35 @@ export default function HomePage() {
 
     fetchCharacters();
   }, []);
+
+  useEffect(() => {
+    const fetchFollowingFeed = async () => {
+      if (!isAuthenticated) {
+        setFollowingFeed([]);
+        return;
+      }
+
+      if (!user?.followingCreators?.length) {
+        setFollowingFeed([]);
+        return;
+      }
+
+      setFollowingFeedLoading(true);
+      try {
+        const response = await api.get('/characters/feed/following', {
+          params: { limit: 6 },
+        });
+        setFollowingFeed(response.data || []);
+      } catch (error) {
+        console.error('팔로우 피드를 불러오는데 실패했습니다:', error);
+        setFollowingFeed([]);
+      } finally {
+        setFollowingFeedLoading(false);
+      }
+    };
+
+    fetchFollowingFeed();
+  }, [isAuthenticated, user?.followingCreators?.length]);
 
   return (
     <PageLayout>
@@ -179,7 +174,6 @@ export default function HomePage() {
         ) : null}
 
         <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 }, px: { xs: 2, md: 4 } }}>
-
           {/* Tab Navigation */}
           <Box
             sx={{
@@ -196,7 +190,7 @@ export default function HomePage() {
               spacing={{ xs: 2, md: 3 }}
               sx={{ minWidth: 'max-content', px: { xs: 0, md: 0 } }}
             >
-              {['홈', '신작 랭킹', '랭킹', '카테고리', '태그', '베이비즈'].map((tab, index) => (
+              {['홈', '신작 랭킹', '랭킹', '카테고리', '태그', '몽글즈'].map((tab, index) => (
                 <Box
                   key={tab}
                   onClick={() => setActiveTab(index)}
@@ -245,6 +239,242 @@ export default function HomePage() {
           {/* Content based on active tab */}
           {activeTab === 0 && (
             <>
+              {isAuthenticated && (
+                <Box sx={{ mb: { xs: 3, md: 4 } }}>
+                  <Card
+                    sx={{
+                      borderRadius: 3,
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      background:
+                        'radial-gradient(circle at top right, rgba(124, 199, 255, 0.16), transparent 28%), linear-gradient(160deg, rgba(22, 26, 38, 0.96), rgba(13, 16, 26, 0.96))',
+                      boxShadow: '0 24px 60px rgba(8, 10, 18, 0.2)',
+                    }}
+                  >
+                    <CardContent sx={{ p: { xs: 2.5, md: 3 } }}>
+                      <Stack
+                        direction={{ xs: 'column', md: 'row' }}
+                        justifyContent="space-between"
+                        alignItems={{ xs: 'flex-start', md: 'center' }}
+                        spacing={2}
+                        sx={{ mb: 2.5 }}
+                      >
+                        <Box>
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                            <Chip
+                              label={`팔로우 ${user?.followingCreators?.length || 0}명`}
+                              sx={{
+                                borderRadius: '12px',
+                                bgcolor: alpha('#7cc7ff', 0.14),
+                                color: '#7cc7ff',
+                                fontWeight: 700,
+                              }}
+                            />
+                            <Chip
+                              label="맞춤 신작 피드"
+                              sx={{
+                                borderRadius: '12px',
+                                bgcolor: 'rgba(255,255,255,0.06)',
+                                color: 'rgba(255,255,255,0.72)',
+                                fontWeight: 700,
+                              }}
+                            />
+                          </Stack>
+                          <Typography
+                            variant="h6"
+                            fontWeight={800}
+                            sx={{ color: '#fff', fontSize: { xs: '1.05rem', md: '1.35rem' } }}
+                          >
+                            팔로우한 크리에이터의 최신 공개 캐릭터
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: 'rgba(255,255,255,0.62)', mt: 0.8, maxWidth: 640 }}
+                          >
+                            방금 공개된 신작을 한 번에 확인하고, 바로 대화로 이어질 수 있게 묶었습니다.
+                          </Typography>
+                        </Box>
+
+                        <Button
+                          endIcon={<ArrowForwardIcon />}
+                          onClick={() => router.push(getLocalePath('/leaderboard'))}
+                          sx={{
+                            color: '#7cc7ff',
+                            fontWeight: 700,
+                            px: 0,
+                            minWidth: 'auto',
+                          }}
+                        >
+                          더 많은 크리에이터 보기
+                        </Button>
+                      </Stack>
+
+                      {followingFeedLoading ? (
+                        <Box display="flex" justifyContent="center" py={5}>
+                          <CircularProgress size={28} sx={{ color: '#7cc7ff' }} />
+                        </Box>
+                      ) : followingFeed.length > 0 ? (
+                        <Grid container spacing={{ xs: 1.5, md: 2 }}>
+                          {followingFeed.map((character) => (
+                            <Grid item xs={6} sm={4} md={3} lg={2.4} key={`following-${character._id}`}>
+                              <Card
+                                sx={{
+                                  bgcolor: '#20242f',
+                                  borderRadius: 1,
+                                  overflow: 'hidden',
+                                  border: '1px solid rgba(124,199,255,0.16)',
+                                  cursor: 'pointer',
+                                  position: 'relative',
+                                  transition: 'all 0.3s',
+                                  '&:hover': {
+                                    transform: 'translateY(-4px)',
+                                    boxShadow: '0 12px 24px rgba(124, 199, 255, 0.18)',
+                                    borderColor: '#7cc7ff',
+                                  },
+                                }}
+                                onClick={() => router.push(getLocalePath(`/characters/${character._id}`))}
+                              >
+                                <Box
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 8,
+                                    left: 8,
+                                    bgcolor: '#7cc7ff',
+                                    color: '#07111d',
+                                    px: 1,
+                                    py: 0.3,
+                                    borderRadius: 1,
+                                    fontSize: '0.7rem',
+                                    fontWeight: 800,
+                                    zIndex: 2,
+                                  }}
+                                >
+                                  FOLLOWING
+                                </Box>
+                                <Box
+                                  sx={{
+                                    aspectRatio: '3/4',
+                                    background: 'linear-gradient(135deg, #2a3142 0%, #171b24 100%)',
+                                  }}
+                                >
+                                  {character.profileImage ? (
+                                    <Box
+                                      component="img"
+                                      src={character.profileImage}
+                                      alt={character.name}
+                                      sx={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box
+                                      sx={{
+                                        width: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '3rem',
+                                        color: '#8aa0bd',
+                                      }}
+                                    >
+                                      {character.name[0]}
+                                    </Box>
+                                  )}
+                                </Box>
+
+                                <CardContent sx={{ p: { xs: 1, md: 1.5 } }}>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight={600}
+                                    noWrap
+                                    sx={{
+                                      color: '#fff',
+                                      mb: 0.5,
+                                      fontSize: { xs: '0.85rem', md: '0.95rem' },
+                                    }}
+                                  >
+                                    {character.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      color: '#9fb7d8',
+                                      display: 'block',
+                                      mb: 0.5,
+                                      fontSize: { xs: '0.7rem', md: '0.75rem' },
+                                      cursor: character.creator?._id ? 'pointer' : 'default',
+                                      '&:hover': character.creator?._id ? { color: '#d0e8ff' } : undefined,
+                                    }}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      if (character.creator?._id) {
+                                        router.push(getLocalePath(`/creators/${character.creator._id}`));
+                                      }
+                                    }}
+                                    noWrap
+                                  >
+                                    @{character.creator?.username || '크리에이터'}
+                                  </Typography>
+                                  <Stack direction="row" spacing={1.5} sx={{ fontSize: '0.7rem' }}>
+                                    <Stack direction="row" alignItems="center" spacing={0.3}>
+                                      <FavoriteIcon sx={{ fontSize: { xs: 12, md: 14 }, color: '#7cc7ff' }} />
+                                      <Typography variant="caption" sx={{ color: '#9fb7d8', fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
+                                        {character.likes}
+                                      </Typography>
+                                    </Stack>
+                                    <Stack direction="row" alignItems="center" spacing={0.3}>
+                                      <ChatBubbleOutlineIcon sx={{ fontSize: { xs: 12, md: 14 }, color: '#9fb7d8' }} />
+                                      <Typography variant="caption" sx={{ color: '#9fb7d8', fontSize: { xs: '0.7rem', md: '0.75rem' } }}>
+                                        {character.usageCount}
+                                      </Typography>
+                                    </Stack>
+                                  </Stack>
+                                </CardContent>
+                              </Card>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      ) : (
+                        <Box
+                          sx={{
+                            borderRadius: 3,
+                            border: '1px dashed rgba(255,255,255,0.14)',
+                            bgcolor: 'rgba(255,255,255,0.03)',
+                            p: { xs: 2.5, md: 3 },
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#fff', mb: 0.6 }}>
+                            {user?.followingCreators?.length
+                              ? '팔로우한 크리에이터의 새 공개 캐릭터가 아직 없습니다'
+                              : '아직 팔로우한 크리에이터가 없습니다'}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.62)', mb: 2 }}>
+                            {user?.followingCreators?.length
+                              ? '인기 크리에이터를 더 둘러보거나, 이미 팔로우한 크리에이터의 다음 공개를 기다려보세요.'
+                              : '좋아하는 크리에이터를 팔로우하면 신작이 여기 먼저 도착합니다.'}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            endIcon={<ArrowForwardIcon />}
+                            onClick={() => router.push(getLocalePath('/leaderboard'))}
+                            sx={{
+                              borderRadius: '12px',
+                              background: 'linear-gradient(135deg, #7cc7ff, #9ee6ff)',
+                              color: '#06111f',
+                              fontWeight: 800,
+                            }}
+                          >
+                            크리에이터 둘러보기
+                          </Button>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              )}
+
               {/* Section Title */}
               <Box display="flex" alignItems="center" mb={{ xs: 2, md: 3 }}>
                 <Typography
@@ -430,6 +660,14 @@ export default function HomePage() {
                           display: 'block',
                           mb: 0.5,
                           fontSize: { xs: '0.7rem', md: '0.75rem' },
+                          cursor: character.creator?._id ? 'pointer' : 'default',
+                          '&:hover': character.creator?._id ? { color: '#ff8fab' } : undefined,
+                        }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (character.creator?._id) {
+                            router.push(getLocalePath(`/creators/${character.creator._id}`));
+                          }
                         }}
                         noWrap
                       >
@@ -563,6 +801,14 @@ export default function HomePage() {
                         display: 'block',
                         mb: 0.5,
                         fontSize: { xs: '0.7rem', md: '0.75rem' },
+                        cursor: character.creator?._id ? 'pointer' : 'default',
+                        '&:hover': character.creator?._id ? { color: '#ff8fab' } : undefined,
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (character.creator?._id) {
+                          router.push(getLocalePath(`/creators/${character.creator._id}`));
+                        }
                       }}
                       noWrap
                     >
@@ -708,6 +954,14 @@ export default function HomePage() {
                               color: '#999',
                               display: 'block',
                               mb: 1.5,
+                              cursor: character.creator?._id ? 'pointer' : 'default',
+                              '&:hover': character.creator?._id ? { color: '#ff8fab' } : undefined,
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (character.creator?._id) {
+                                router.push(getLocalePath(`/creators/${character.creator._id}`));
+                              }
                             }}
                           >
                             @{character.creator?.username || '크리에이터'}
@@ -824,7 +1078,24 @@ export default function HomePage() {
                         </Box>
                         <CardContent sx={{ p: 2 }}>
                           <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 0.5 }}>{character.name}</Typography>
-                          <Typography variant="caption" sx={{ color: '#999', display: 'block', mb: 1 }}>@{character.creator?.username || '크리에이터'}</Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#999',
+                              display: 'block',
+                              mb: 1,
+                              cursor: character.creator?._id ? 'pointer' : 'default',
+                              '&:hover': character.creator?._id ? { color: '#ff8fab' } : undefined,
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (character.creator?._id) {
+                                router.push(getLocalePath(`/creators/${character.creator._id}`));
+                              }
+                            }}
+                          >
+                            @{character.creator?.username || '크리에이터'}
+                          </Typography>
                           <Stack direction="row" spacing={2}>
                             <Stack direction="row" alignItems="center" spacing={0.5}>
                               <FavoriteIcon sx={{ fontSize: 16, color: '#ff3366' }} />
@@ -846,7 +1117,7 @@ export default function HomePage() {
                 <Button
                   variant="outlined"
                   onClick={() => router.push(getLocalePath('/leaderboard'))}
-                  sx={{ borderColor: '#ff3366', color: '#ff3366', borderRadius: 999, px: 4, '&:hover': { borderColor: '#ff3366', bgcolor: 'rgba(255, 51, 102, 0.1)' } }}
+                  sx={{ borderColor: '#ff3366', color: '#ff3366', borderRadius: '12px', px: 4, '&:hover': { borderColor: '#ff3366', bgcolor: 'rgba(255, 51, 102, 0.1)' } }}
                 >
                   전체 랭킹 보기
                 </Button>
@@ -963,12 +1234,12 @@ export default function HomePage() {
             </>
           )}
 
-          {/* Tab 5: 베이비즈 */}
+          {/* Tab 5: 몽글즈 */}
           {activeTab === 5 && (
             <>
               <Box mb={{ xs: 3, md: 4 }}>
                 <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', fontSize: { xs: '1.1rem', md: '1.5rem' }, mb: 1 }}>
-                  🍼 베이비즈
+                  🍼 몽글즈
                 </Typography>
                 <Typography variant="body2" sx={{ color: '#999' }}>신규 크리에이터들의 첫 캐릭터를 만나보세요</Typography>
               </Box>
@@ -1005,7 +1276,22 @@ export default function HomePage() {
                         </Box>
                         <CardContent sx={{ p: 1.5 }}>
                           <Typography variant="body2" fontWeight={600} noWrap sx={{ color: '#fff' }}>{character.name}</Typography>
-                          <Typography variant="caption" sx={{ color: '#999' }}>@{character.creator?.username || '크리에이터'}</Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: '#999',
+                              cursor: character.creator?._id ? 'pointer' : 'default',
+                              '&:hover': character.creator?._id ? { color: '#ff8fab' } : undefined,
+                            }}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (character.creator?._id) {
+                                router.push(getLocalePath(`/creators/${character.creator._id}`));
+                              }
+                            }}
+                          >
+                            @{character.creator?.username || '크리에이터'}
+                          </Typography>
                         </CardContent>
                       </Card>
                     </Grid>

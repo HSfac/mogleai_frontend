@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { alpha } from '@mui/material/styles';
 import {
   Box,
   Container,
@@ -15,12 +16,6 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemAvatar,
-  ListItemText,
-  Paper,
   Tab,
   Tabs,
   Dialog,
@@ -32,7 +27,13 @@ import {
 } from '@mui/material';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ShieldIcon from '@mui/icons-material/Shield';
-import { useRouter } from 'next/navigation';
+import TokenIcon from '@mui/icons-material/Token';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useParams, useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/services/userService';
@@ -40,11 +41,31 @@ import { characterService } from '@/services/character.service';
 import { chatService } from '@/services/chatService';
 import { paymentService } from '@/services/paymentService';
 import { authService } from '@/services/authService';
+import { localizePath } from '@/lib/localePath';
 
 const tabLabels = ['내가 만든 캐릭터', '즐겨찾기', '최근 대화', '결제 내역'];
 
+const panelSx = {
+  borderRadius: 4,
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  background: 'linear-gradient(180deg, rgba(21, 23, 35, 0.92), rgba(14, 16, 27, 0.88))',
+  backdropFilter: 'blur(18px)',
+  boxShadow: '0 24px 60px rgba(8, 10, 18, 0.28)',
+} as const;
+
+const formatDateLabel = (value?: string) =>
+  value
+    ? new Date(value).toLocaleString('ko-KR', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '정보 없음';
+
 export default function ProfilePage() {
   const router = useRouter();
+  const params = useParams<{ locale?: string }>();
   const { user: authUser, isAuthenticated, refreshUser } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [createdCharacters, setCreatedCharacters] = useState<any[]>([]);
@@ -98,6 +119,79 @@ export default function ProfilePage() {
     favorites: favoriteCharacters.length,
     created: createdCharacters.length,
   }), [userData, favoriteCharacters.length, createdCharacters.length]);
+
+  const navigateTo = (path: string) => {
+    router.push(localizePath(params?.locale, path));
+  };
+
+  const statCards = [
+    { label: '보유 토큰', value: stats.tokens.toLocaleString(), helper: '대화 연료' },
+    { label: '최근 대화', value: stats.conversations.toLocaleString(), helper: '누적 상호작용' },
+    { label: '즐겨찾기', value: stats.favorites.toLocaleString(), helper: '찜한 캐릭터' },
+    { label: '내 캐릭터', value: stats.created.toLocaleString(), helper: '직접 만든 세계관' },
+  ];
+
+  const quickActions = [
+    {
+      label: '토큰 충전',
+      description: '잔액을 확인하고 바로 충전',
+      icon: <TokenIcon sx={{ color: '#ffb347' }} />,
+      onClick: () => navigateTo('/tokens'),
+    },
+    {
+      label: '알림 정리',
+      description: `${Math.max(0, favoriteCharacters.length)}개 즐겨찾기와 최신 소식 확인`,
+      icon: <NotificationsIcon sx={{ color: '#ff8fab' }} />,
+      onClick: () => navigateTo('/notifications'),
+    },
+    {
+      label: '캐릭터 둘러보기',
+      description: '새 대화 상대 찾기',
+      icon: <AutoAwesomeIcon sx={{ color: '#7ddc86' }} />,
+      onClick: () => navigateTo('/characters'),
+    },
+  ];
+
+  const renderEmptyState = (title: string, description: string, actionLabel: string, path: string) => (
+    <Card sx={{ ...panelSx, textAlign: 'center' }}>
+      <CardContent sx={{ py: 7 }}>
+        <Box
+          sx={{
+            width: 72,
+            height: 72,
+            borderRadius: '24px',
+            bgcolor: 'rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            mx: 'auto',
+            mb: 2,
+          }}
+        >
+          <AutoAwesomeIcon sx={{ color: '#ff8fab', fontSize: 34 }} />
+        </Box>
+        <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', mb: 1 }}>
+          {title}
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.62)', mb: 3 }}>
+          {description}
+        </Typography>
+        <Button
+          variant="contained"
+          endIcon={<ArrowForwardIcon />}
+          onClick={() => navigateTo(path)}
+          sx={{
+            borderRadius: '12px',
+            px: 3,
+            background: 'linear-gradient(135deg, #ff5f9b, #ff8fab)',
+            fontWeight: 700,
+          }}
+        >
+          {actionLabel}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   const handleOpenEditDialog = () => {
     setEditForm({ username: authUser?.username || '' });
@@ -225,139 +319,212 @@ export default function ProfilePage() {
           <>
             <Card
               sx={{
-                borderRadius: 3,
-                px: { xs: 3, md: 4 },
-                py: 4,
-                mb: 4,
-                background: 'linear-gradient(135deg, #ff5f9b 0%, #ff8fb3 100%)',
-                color: '#fff',
-                boxShadow: '0 8px 32px rgba(255, 95, 155, 0.25)',
-                border: 'none',
+                ...panelSx,
+                mb: 3,
+                overflow: 'hidden',
+                background:
+                  'radial-gradient(circle at top right, rgba(255, 95, 155, 0.24), transparent 32%), linear-gradient(160deg, rgba(34, 24, 44, 0.96), rgba(15, 16, 28, 0.96))',
               }}
             >
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems="center">
-                <Avatar
-                  src={authUser?.profileImage}
-                  sx={{
-                    width: 80,
-                    height: 80,
-                    bgcolor: '#fff',
-                    color: '#ff5f9b',
-                    fontWeight: 700,
-                    fontSize: '1.5rem',
-                    border: '3px solid rgba(255,255,255,0.3)',
-                  }}
-                >
-                  {authUser?.username?.slice(0, 1) ?? 'U'}
-                </Avatar>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="h5" fontWeight={700}>
-                      {authUser?.username || '사용자'}
-                    </Typography>
-                    {authUser?.isAdultVerified && (
-                      <Tooltip title="19세 이상 인증 완료" arrow>
+              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} md={8}>
+                    <Stack spacing={2.5}>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                         <Chip
-                          icon={<VerifiedUserIcon sx={{ fontSize: 16, color: '#fff !important' }} />}
-                          label="19+"
+                          label={authUser?.isAdultVerified ? '성인 인증 완료' : '기본 프로필'}
                           size="small"
                           sx={{
-                            bgcolor: 'rgba(255,255,255,0.25)',
-                            color: '#fff',
+                            bgcolor: authUser?.isAdultVerified ? 'rgba(125, 220, 134, 0.16)' : 'rgba(255,255,255,0.08)',
+                            color: authUser?.isAdultVerified ? '#99efab' : '#fff',
                             fontWeight: 700,
-                            height: 26,
-                            '& .MuiChip-icon': { color: '#fff' },
                           }}
                         />
-                      </Tooltip>
-                    )}
-                  </Stack>
-                  <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>
-                    {authUser?.email}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1.5}>
-                  <Button
-                    variant="outlined"
-                    color="inherit"
-                    size="small"
-                    onClick={handleOpenEditDialog}
-                    sx={{
-                      borderRadius: 2,
-                      px: 2,
-                      borderColor: 'rgba(255,255,255,0.5)',
-                      '&:hover': {
-                        borderColor: '#fff',
-                        bgcolor: 'rgba(255,255,255,0.1)'
-                      }
-                    }}
-                  >
-                    프로필 편집
-                  </Button>
-                </Stack>
-              </Stack>
-              <Stack direction="row" spacing={2} flexWrap="wrap" mt={3} gap={1}>
-                {[
-                  { label: '보유 토큰', value: stats.tokens },
-                  { label: '대화 수', value: stats.conversations },
-                  { label: '즐겨찾기', value: stats.favorites },
-                  { label: '생성 캐릭터', value: stats.created },
-                ].map((item) => (
-                  <Box
-                    key={item.label}
-                    sx={{
-                      minWidth: 100,
-                      borderRadius: 2,
-                      px: 2,
-                      py: 1.5,
-                      background: 'rgba(255,255,255,0.15)',
-                      backdropFilter: 'blur(10px)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <Typography variant="caption" sx={{ opacity: 0.85 }}>
-                      {item.label}
-                    </Typography>
-                    <Typography variant="h6" fontWeight={700}>
-                      {item.value.toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </Stack>
+                        <Chip
+                          label={`${stats.created}개 캐릭터 관리중`}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(255, 95, 155, 0.14)',
+                            color: '#ff8fab',
+                            fontWeight: 700,
+                          }}
+                        />
+                      </Stack>
+
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                        <Avatar
+                          src={authUser?.profileImage}
+                          sx={{
+                            width: 92,
+                            height: 92,
+                            bgcolor: '#fff',
+                            color: '#ff5f9b',
+                            fontWeight: 800,
+                            fontSize: '1.8rem',
+                            border: '3px solid rgba(255,255,255,0.16)',
+                            boxShadow: '0 18px 40px rgba(255, 95, 155, 0.2)',
+                          }}
+                        >
+                          {authUser?.username?.slice(0, 1) ?? 'U'}
+                        </Avatar>
+
+                        <Box sx={{ flexGrow: 1 }}>
+                          <Stack direction="row" alignItems="center" spacing={1.2} flexWrap="wrap" useFlexGap>
+                            <Typography variant="h4" fontWeight={800} sx={{ color: '#fff' }}>
+                              {authUser?.username || '사용자'}
+                            </Typography>
+                            {authUser?.isAdultVerified && (
+                              <Tooltip title="19세 이상 인증 완료" arrow>
+                                <Chip
+                                  icon={<VerifiedUserIcon sx={{ fontSize: 16, color: '#fff !important' }} />}
+                                  label="19+"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(255,255,255,0.12)',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                    '& .MuiChip-icon': { color: '#fff' },
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                          </Stack>
+
+                          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.68)', mt: 0.6 }}>
+                            {authUser?.email}
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.78)', mt: 1.5, maxWidth: 520, lineHeight: 1.7 }}>
+                            대화 기록, 즐겨찾기, 결제 내역까지 한 화면에서 관리할 수 있도록 구성했습니다.
+                            자주 쓰는 작업은 오른쪽 퀵 액션으로 바로 이동할 수 있습니다.
+                          </Typography>
+                        </Box>
+                      </Stack>
+
+                      <Grid container spacing={1.5}>
+                        {statCards.map((item) => (
+                          <Grid item xs={6} md={3} key={item.label}>
+                            <Box
+                              sx={{
+                                height: '100%',
+                                borderRadius: 3,
+                                px: 2,
+                                py: 1.8,
+                                background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                              }}
+                            >
+                              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.54)' }}>
+                                {item.label}
+                              </Typography>
+                              <Typography variant="h5" fontWeight={800} sx={{ color: '#fff', mt: 0.4 }}>
+                                {item.value}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.58)' }}>
+                                {item.helper}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Stack>
+                  </Grid>
+
+                  <Grid item xs={12} md={4}>
+                    <Stack spacing={1.5} sx={{ height: '100%' }}>
+                      <Button
+                        variant="contained"
+                        onClick={handleOpenEditDialog}
+                        sx={{
+                          borderRadius: '12px',
+                          py: 1.3,
+                          background: 'linear-gradient(135deg, #ff5f9b, #ff8fab)',
+                          fontWeight: 700,
+                        }}
+                      >
+                        프로필 편집
+                      </Button>
+
+                      {quickActions.map((action) => (
+                        <Box
+                          key={action.label}
+                          onClick={action.onClick}
+                          sx={{
+                            p: 2,
+                            borderRadius: 3,
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease, border-color 0.2s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              borderColor: 'rgba(255, 143, 171, 0.4)',
+                            },
+                          }}
+                        >
+                          <Stack direction="row" spacing={1.5} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 42,
+                                height: 42,
+                                borderRadius: 3,
+                                bgcolor: 'rgba(255,255,255,0.06)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {action.icon}
+                            </Box>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#fff' }}>
+                                {action.label}
+                              </Typography>
+                              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.58)' }}>
+                                {action.description}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </CardContent>
             </Card>
 
-            {/* 19세 인증 안내 카드 */}
             {!authUser?.isAdultVerified && (
               <Card
                 sx={{
-                  borderRadius: 2.5,
+                  ...panelSx,
                   mb: 3,
-                  border: '1px solid rgba(255, 95, 155, 0.3)',
-                  background: 'linear-gradient(135deg, rgba(255,95,155,0.05) 0%, rgba(255,143,179,0.05) 100%)',
+                  border: '1px solid rgba(255, 95, 155, 0.24)',
+                  background:
+                    'linear-gradient(135deg, rgba(255,95,155,0.14) 0%, rgba(255,143,179,0.08) 100%)',
                 }}
               >
                 <CardContent sx={{ py: 2.5 }}>
                   <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={2}>
                     <Box
                       sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
-                        bgcolor: 'rgba(255, 95, 155, 0.1)',
+                        width: 52,
+                        height: 52,
+                        borderRadius: '18px',
+                        bgcolor: 'rgba(255, 255, 255, 0.08)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
                       }}
                     >
-                      <ShieldIcon sx={{ color: '#ff5f9b', fontSize: 28 }} />
+                      <ShieldIcon sx={{ color: '#fff', fontSize: 28 }} />
                     </Box>
                     <Box sx={{ flexGrow: 1, textAlign: { xs: 'center', sm: 'left' } }}>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        19세 이상 인증하고 더 많은 콘텐츠를 즐겨보세요
+                      <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#fff' }}>
+                        19세 이상 인증하고 더 넓은 캐릭터 풀을 열어보세요
                       </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        성인 인증을 완료하면 19+ 캐릭터 생성 및 대화가 가능합니다.
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.72)' }}>
+                        인증을 마치면 19+ 캐릭터 생성과 성인 대화 모드를 사용할 수 있습니다.
                       </Typography>
                     </Box>
                     <Button
@@ -365,11 +532,15 @@ export default function ProfilePage() {
                       size="medium"
                       onClick={() => setVerifyDialogOpen(true)}
                       sx={{
-                        bgcolor: '#ff5f9b',
-                        '&:hover': { bgcolor: '#e54d87' },
-                        borderRadius: 2,
+                        borderRadius: '12px',
                         px: 3,
-                        whiteSpace: 'nowrap',
+                        py: 1.1,
+                        bgcolor: '#fff',
+                        color: '#ff5f9b',
+                        fontWeight: 800,
+                        '&:hover': {
+                          bgcolor: 'rgba(255,255,255,0.92)',
+                        },
                       }}
                     >
                       인증하기
@@ -379,157 +550,269 @@ export default function ProfilePage() {
               </Card>
             )}
 
-            <Tabs
-              value={tabValue}
-              onChange={(event, value) => setTabValue(value)}
-              textColor="secondary"
-              indicatorColor="secondary"
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ mb: 3 }}
-            >
-              {tabLabels.map((label) => (
-                <Tab key={label} label={label} />
-              ))}
-            </Tabs>
+            <Card sx={{ ...panelSx, mb: 3 }}>
+              <CardContent sx={{ p: 1 }}>
+                <Tabs
+                  value={tabValue}
+                  onChange={(_, value) => setTabValue(value)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    minHeight: 0,
+                    '& .MuiTabs-indicator': { display: 'none' },
+                    '& .MuiTab-root': {
+                      minHeight: 44,
+                      borderRadius: '12px',
+                      color: 'rgba(255,255,255,0.54)',
+                      fontWeight: 700,
+                      mr: 1,
+                    },
+                    '& .Mui-selected': {
+                      background: 'linear-gradient(135deg, rgba(255,95,155,0.92), rgba(255,143,171,0.92))',
+                      color: '#fff !important',
+                    },
+                  }}
+                >
+                  {tabLabels.map((label) => (
+                    <Tab key={label} label={label} />
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
 
             {tabValue === 0 && (
               <>
-                <Grid container spacing={3}>
-                  {createdCharacters.map((character) => (
-                    <Grid item xs={12} sm={6} md={4} key={character._id}>
-                      <Card
-                        sx={{
-                          borderRadius: 2.5,
-                          border: '1px solid rgba(255, 95, 155, 0.15)',
-                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.06)',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            boxShadow: '0 6px 20px rgba(255, 95, 155, 0.15)',
-                            transform: 'translateY(-2px)',
-                          },
-                        }}
-                      >
-                        <CardContent>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            {character.name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.5 }}>
-                            {character.description || '설명 정보가 없습니다.'}
-                          </Typography>
-                          <Stack direction="row" spacing={0.5}>
-                            {character.tags?.slice(0, 2).map((tag: string) => (
-                              <Chip key={tag} label={tag} size="small" sx={{ borderRadius: 1.5, fontSize: '0.75rem' }} />
-                            ))}
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-                {createdCharacters.length === 0 && (
-                  <Paper sx={{ p: 3, mt: 2, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      아직 만든 캐릭터가 없습니다. 캐릭터를 만들고 첫 대화를 시작해보세요.
-                    </Typography>
-                  </Paper>
+                {createdCharacters.length === 0 ? (
+                  renderEmptyState(
+                    '아직 만든 캐릭터가 없습니다',
+                    '첫 캐릭터를 만들면 프로필에서 조회수와 태그, 운영 상태를 한눈에 볼 수 있습니다.',
+                    '캐릭터 만들기',
+                    '/characters/create'
+                  )
+                ) : (
+                  <Grid container spacing={2}>
+                    {createdCharacters.map((character) => (
+                      <Grid item xs={12} sm={6} md={4} key={character._id}>
+                        <Card
+                          onClick={() => navigateTo(`/characters/${character._id}`)}
+                          sx={{
+                            ...panelSx,
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease, border-color 0.2s ease',
+                            '&:hover': {
+                              transform: 'translateY(-4px)',
+                              borderColor: 'rgba(255, 143, 171, 0.4)',
+                            },
+                          }}
+                        >
+                          <CardContent sx={{ p: 2.5 }}>
+                            <Stack direction="row" justifyContent="space-between" spacing={1} mb={1.5}>
+                              <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#fff' }}>
+                                {character.name}
+                              </Typography>
+                              <Chip
+                                label={character.visibility === 'private' ? '비공개' : '운영중'}
+                                size="small"
+                                sx={{
+                                  borderRadius: '12px',
+                                  bgcolor: 'rgba(255,255,255,0.06)',
+                                  color: 'rgba(255,255,255,0.7)',
+                                }}
+                              />
+                            </Stack>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: 'rgba(255,255,255,0.64)',
+                                mb: 2,
+                                lineHeight: 1.7,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {character.description || '설명 정보가 없습니다.'}
+                            </Typography>
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              {(character.tags?.slice(0, 3) || []).map((tag: string) => (
+                                <Chip
+                                  key={tag}
+                                  label={tag}
+                                  size="small"
+                                  sx={{
+                                    borderRadius: '12px',
+                                    bgcolor: alpha('#ff8fab', 0.12),
+                                    color: '#ff8fab',
+                                    fontWeight: 700,
+                                  }}
+                                />
+                              ))}
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
                 )}
               </>
             )}
 
             {tabValue === 1 && (
-              <List>
-                {favoriteCharacters.map((character) => (
-                  <ListItem key={character._id}>
-                    <ListItemAvatar>
-                      <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e' }}>
-                        {character.name?.slice(0, 1)}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={character.name}
-                      secondary={character.description}
-                    />
-                    <Chip label="즐겨찾기" variant="outlined" sx={{ borderColor: '#ff5f9b', color: '#ff5f9b' }} />
-                  </ListItem>
-                ))}
-                {favoriteCharacters.length === 0 && (
-                  <Paper sx={{ p: 3, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      관심 있는 캐릭터를 즐겨찾기에 등록하면 이곳에 모아 보여드립니다.
-                    </Typography>
-                  </Paper>
+              <>
+                {favoriteCharacters.length === 0 ? (
+                  renderEmptyState(
+                    '즐겨찾기한 캐릭터가 없습니다',
+                    '관심 있는 캐릭터를 저장해두면 새로운 이벤트나 업데이트를 빠르게 추적할 수 있습니다.',
+                    '캐릭터 둘러보기',
+                    '/characters'
+                  )
+                ) : (
+                  <Stack spacing={2}>
+                    {favoriteCharacters.map((character) => (
+                      <Card key={character._id} sx={panelSx}>
+                        <CardContent sx={{ p: 2.25 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e', width: 52, height: 52 }}>
+                                {character.name?.slice(0, 1)}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#fff' }}>
+                                  {character.name}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    color: 'rgba(255,255,255,0.64)',
+                                    lineHeight: 1.7,
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                  }}
+                                >
+                                  {character.description || '설명이 없습니다.'}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                            <Chip
+                              icon={<FavoriteIcon sx={{ color: '#ff8fab !important' }} />}
+                              label="즐겨찾기"
+                              sx={{
+                                borderRadius: '12px',
+                                bgcolor: alpha('#ff8fab', 0.12),
+                                color: '#ff8fab',
+                                fontWeight: 700,
+                              }}
+                            />
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
                 )}
-              </List>
+              </>
             )}
 
             {tabValue === 2 && (
-              <List>
-                {recentChats.map((chat) => (
-                  <ListItem key={chat._id} disablePadding>
-                    <ListItemButton onClick={() => router.push(`/chat/${chat._id}`)}>
-                      <ListItemAvatar>
-                        <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e' }}>
-                          {chat.characterInfo?.name?.slice(0, 1) || 'C'}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={chat.characterInfo?.name || '알 수 없는'}
-                        secondary={`마지막 대화: ${
-                          chat.lastActivity ? new Date(chat.lastActivity).toLocaleString() : '정보 없음'
-                        }`}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-                {recentChats.length === 0 && (
-                  <Paper sx={{ p: 3, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
-                    <Typography variant="body2" color="text.secondary">
-                      대화가 없습니다. 새로운 캐릭터와 대화를 시작해보세요.
-                    </Typography>
-                  </Paper>
+              <>
+                {recentChats.length === 0 ? (
+                  renderEmptyState(
+                    '최근 대화가 없습니다',
+                    '캐릭터와의 대화를 시작하면 마지막 활동 시간과 상대 정보를 여기서 빠르게 이어볼 수 있습니다.',
+                    '대화 시작하기',
+                    '/characters'
+                  )
+                ) : (
+                  <Stack spacing={2}>
+                    {recentChats.map((chat) => (
+                      <Card key={chat._id} sx={panelSx}>
+                        <CardContent sx={{ p: 2.25 }}>
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Avatar sx={{ bgcolor: '#ffe4f5', color: '#c3006e', width: 52, height: 52 }}>
+                                {chat.characterInfo?.name?.slice(0, 1) || 'C'}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography variant="subtitle1" fontWeight={700} sx={{ color: '#fff' }}>
+                                  {chat.characterInfo?.name || '알 수 없는 캐릭터'}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.64)' }}>
+                                  마지막 대화 {formatDateLabel(chat.lastActivity)}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                            <Button
+                              variant="outlined"
+                              startIcon={<ChatBubbleOutlineIcon />}
+                              onClick={() => navigateTo(`/chat/${chat._id}`)}
+                              sx={{
+                                borderRadius: '12px',
+                                borderColor: 'rgba(255,255,255,0.12)',
+                                color: '#fff',
+                                fontWeight: 700,
+                              }}
+                            >
+                              이어보기
+                            </Button>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
                 )}
-              </List>
+              </>
             )}
 
             {tabValue === 3 && (
-              <Grid container spacing={3}>
-                {paymentHistory.map((payment) => (
-                  <Grid item xs={12} md={6} key={payment._id}>
-                    <Card
-                      sx={{
-                        borderRadius: 2.5,
-                        border: '1px solid rgba(255, 95, 155, 0.12)',
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                      }}
-                    >
-                      <CardContent sx={{ py: 2 }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between">
-                          <Typography variant="subtitle2" fontWeight={600}>
-                            {payment.paymentId}
-                          </Typography>
-                          <Chip label={payment.status} size="small" sx={{ borderRadius: 1.5 }} />
-                        </Stack>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                          {payment.tokens} 토큰 · {payment.amount?.toLocaleString()}원
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(payment.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-                {paymentHistory.length === 0 && (
-                  <Grid item xs={12}>
-                    <Paper sx={{ p: 3, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
-                      <Typography variant="body2" color="text.secondary">
-                        결제 기록이 없습니다. 토큰을 구매하면 여기에 기록됩니다.
-                      </Typography>
-                    </Paper>
+              <>
+                {paymentHistory.length === 0 ? (
+                  renderEmptyState(
+                    '결제 기록이 없습니다',
+                    '토큰 구매와 구독 내역이 쌓이면 이곳에서 결제 상태와 일자를 빠르게 확인할 수 있습니다.',
+                    '토큰 보러가기',
+                    '/tokens'
+                  )
+                ) : (
+                  <Grid container spacing={2}>
+                    {paymentHistory.map((payment) => (
+                      <Grid item xs={12} md={6} key={payment._id}>
+                        <Card sx={panelSx}>
+                          <CardContent sx={{ p: 2.5 }}>
+                            <Stack direction="row" justifyContent="space-between" spacing={1} mb={1.5}>
+                              <Box>
+                                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#fff' }}>
+                                  {payment.paymentId}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.46)' }}>
+                                  {formatDateLabel(payment.createdAt)}
+                                </Typography>
+                              </Box>
+                              <Chip
+                                label={payment.status}
+                                size="small"
+                                sx={{
+                                  borderRadius: '12px',
+                                  bgcolor: payment.status === 'completed' ? 'rgba(125, 220, 134, 0.16)' : 'rgba(255,255,255,0.06)',
+                                  color: payment.status === 'completed' ? '#99efab' : 'rgba(255,255,255,0.68)',
+                                  fontWeight: 700,
+                                }}
+                              />
+                            </Stack>
+                            <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
+                              {payment.tokens?.toLocaleString() || 0} 토큰
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.64)', mt: 0.5 }}>
+                              결제 금액 {payment.amount?.toLocaleString() || 0}원
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
                   </Grid>
                 )}
-              </Grid>
+              </>
             )}
           </>
         )}

@@ -30,6 +30,7 @@ import api from '@/lib/api';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 type Banner = {
   _id: string;
@@ -46,6 +47,7 @@ type Banner = {
 export default function AdminBannersPage() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,11 +64,11 @@ export default function AdminBannersPage() {
   useEffect(() => {
     if (loading) return;
     if (!isAuthenticated || !user?.isAdmin) {
-      router.push('/login?redirect=/admin/banners');
+      router.push(`${getLocalePath('/login')}?redirect=${encodeURIComponent(getLocalePath('/admin/banners'))}`);
       return;
     }
     fetchBanners();
-  }, [isAuthenticated, user, loading, router]);
+  }, [getLocalePath, isAuthenticated, user, loading, router]);
 
   const fetchBanners = async () => {
     try {

@@ -2,7 +2,7 @@
 export enum AIModel {
   GPT4 = 'gpt4',
   CLAUDE3 = 'claude3',
-  MISTRAL = 'mistral',
+  GROK = 'grok',
   CUSTOM = 'custom',
 }
 
@@ -23,7 +23,10 @@ export interface Character {
   creator?: {
     _id?: string;
     username?: string;
+    profileImage?: string;
+    creatorLevel?: string;
   };
+  defaultAIModel?: AIModel;
   isPublic?: boolean;
   isAdultContent?: boolean;
   isVerified?: boolean;

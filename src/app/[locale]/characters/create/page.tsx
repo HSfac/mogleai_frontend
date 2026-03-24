@@ -48,6 +48,7 @@ import { api } from '@/lib/api';
 import { characterService } from '@/services/character.service';
 import { worldService } from '@/services/worldService';
 import { World } from '@/types/world';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 // 드롭다운 옵션들
 const SPECIES_OPTIONS = [
@@ -68,7 +69,8 @@ const AGE_OPTIONS = [
 
 export default function CreateCharacterPage() {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -123,12 +125,18 @@ export default function CreateCharacterPage() {
 
   // 19세 인증 다이얼로그
   const [adultVerifyDialogOpen, setAdultVerifyDialogOpen] = useState(false);
+  const loginPath = getLocalePath('/login');
+  const createCharacterPath = getLocalePath('/characters/create');
+  const createWorldPath = getLocalePath('/worlds/create');
+  const profilePath = getLocalePath('/profile');
 
-  // 인증 확인
-  if (!isAuthenticated) {
-    router.push('/login?redirect=/characters/create');
-    return null;
-  }
+  useEffect(() => {
+    if (authLoading || isAuthenticated) {
+      return;
+    }
+
+    router.replace(`${loginPath}?redirect=${encodeURIComponent(createCharacterPath)}`);
+  }, [authLoading, createCharacterPath, isAuthenticated, loginPath, router]);
 
   // 세계관 목록 로드
   useEffect(() => {
@@ -156,6 +164,10 @@ export default function CreateCharacterPage() {
     };
     loadWorlds();
   }, []);
+
+  if (authLoading || !isAuthenticated) {
+    return null;
+  }
 
   // 입력 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -445,7 +457,7 @@ export default function CreateCharacterPage() {
 
       // 2초 후 캐릭터 상세 페이지로 이동
       setTimeout(() => {
-        router.push(`/characters/${newCharacter._id}`);
+        router.push(getLocalePath(`/characters/${newCharacter._id}`));
       }, 2000);
     } catch (error: any) {
       console.error('캐릭터 생성 실패:', error);
@@ -568,7 +580,7 @@ export default function CreateCharacterPage() {
                     >
                       <MenuItem value="gpt4">GPT-4 (균형잡힌 성능)</MenuItem>
                       <MenuItem value="claude3">Claude 3 (창의적인 대화)</MenuItem>
-                      <MenuItem value="mistral">Mistral (빠른 응답)</MenuItem>
+                      <MenuItem value="grok">Grok (빠른 응답)</MenuItem>
                     </Select>
                   </FormControl>
 
@@ -610,7 +622,7 @@ export default function CreateCharacterPage() {
                       캐릭터가 속한 세계관을 선택하면 해당 세계관의 설정이 대화에 반영됩니다.{' '}
                       <Button
                         size="small"
-                        onClick={() => router.push('/worlds/create')}
+                        onClick={() => router.push(createWorldPath)}
                         sx={{ fontSize: '0.75rem', p: 0, minWidth: 'auto' }}
                       >
                         새 세계관 만들기
@@ -1252,7 +1264,7 @@ export default function CreateCharacterPage() {
             variant="contained"
             onClick={() => {
               setAdultVerifyDialogOpen(false);
-              router.push('/profile?verify=adult');
+              router.push(`${profilePath}?verify=adult`);
             }}
             sx={{
               bgcolor: '#ff5f9b',

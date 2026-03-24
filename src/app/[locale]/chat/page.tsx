@@ -25,12 +25,14 @@ import { api } from '@/lib/api';
 import { chatService } from '@/services/chatService';
 import { userService } from '@/services/userService';
 import { characterService } from '@/services/character.service';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 interface Character {
   _id: string;
   name: string;
   description?: string;
   imageUrl?: string;
+  profileImage?: string;
   tags?: string[];
   defaultAIModel?: string;
 }
@@ -44,7 +46,8 @@ interface RecentChat {
 
 export default function ChatPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -57,9 +60,17 @@ export default function ChatPage() {
     };
   }, [recentChats.length, characters.length]);
 
+  const loginPath = getLocalePath('/login');
+  const chatPath = getLocalePath('/chat');
+  const charactersPath = getLocalePath('/characters');
+
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     if (!isAuthenticated) {
-      router.push('/login?redirect=/chat');
+      router.replace(`${loginPath}?redirect=${encodeURIComponent(chatPath)}`);
       return;
     }
 
@@ -112,7 +123,7 @@ export default function ChatPage() {
     };
 
     fetchContent();
-  }, [isAuthenticated, router]);
+  }, [authLoading, chatPath, isAuthenticated, loginPath, router]);
 
   const handleFavorite = async (characterId: string) => {
     try {
@@ -134,7 +145,7 @@ export default function ChatPage() {
         characterId: character._id,
         aiModel: character.defaultAIModel || 'gpt4',
       });
-      router.push(`/chat/${chat._id}`);
+      router.push(getLocalePath(`/chat/${chat._id}`));
     } catch (startError) {
       console.error('채팅을 시작하지 못했습니다:', startError);
     }
@@ -165,8 +176,8 @@ export default function ChatPage() {
               color="secondary"
               startIcon={<SendIcon />}
               size="large"
-              sx={{ borderRadius: 999 }}
-              onClick={() => router.push('/characters')}
+              sx={{ borderRadius: '12px' }}
+              onClick={() => router.push(charactersPath)}
             >
               새로운 챗 시작
             </Button>
@@ -175,9 +186,9 @@ export default function ChatPage() {
               sx={{
                 color: '#fff',
                 borderColor: 'rgba(255,255,255,0.6)',
-                borderRadius: 999,
+                borderRadius: '12px',
               }}
-              onClick={() => router.push('/characters')}
+              onClick={() => router.push(charactersPath)}
             >
               캐릭터 둘러보기
             </Button>
@@ -223,11 +234,11 @@ export default function ChatPage() {
                       transform: 'translateY(-2px)',
                     },
                   }}
-                  onClick={() => router.push(`/chat/${chat._id}`)}
+                  onClick={() => router.push(getLocalePath(`/chat/${chat._id}`))}
                 >
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Avatar
-                      src={chat.characterInfo?.imageUrl}
+                      src={chat.characterInfo?.profileImage || chat.characterInfo?.imageUrl}
                       sx={{
                         width: 52,
                         height: 52,
@@ -311,7 +322,7 @@ export default function ChatPage() {
                       variant="contained"
                       color="secondary"
                       startIcon={<SendIcon />}
-                      sx={{ mt: 1, borderRadius: 999 }}
+                      sx={{ mt: 1, borderRadius: '12px' }}
                       onClick={() => handleStartChat(character)}
                     >
                       대화하기

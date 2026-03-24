@@ -21,7 +21,11 @@ import {
   ListItemText,
   ListItemAvatar,
   Alert,
-  Snackbar
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,13 +42,14 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { characterService } from '@/services/character.service';
-import { api } from '@/lib/api';
 import { chatService } from '@/services/chatService';
 import PresetManager from '@/components/preset/PresetManager';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function CharacterDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user, isAuthenticated, requireAuth } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [character, setCharacter] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
@@ -53,6 +58,12 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
   const [successMessage, setSuccessMessage] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPresetId, setSelectedPresetId] = useState<string | undefined>(undefined);
+
+  const charactersPath = getLocalePath('/characters');
+  const creatorDashboardPath = getLocalePath('/creator/dashboard');
+  const creatorProfilePath = character?.creator?._id
+    ? getLocalePath(`/creators/${character.creator._id}`)
+    : '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,7 +93,7 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
   const handleLike = () => {
     requireAuth(async () => {
       try {
-        await api.post(`/characters/${params.id}/like`);
+        await characterService.likeCharacter(params.id);
 
         setIsLiked(!isLiked);
         setCharacter((prev: any) => ({
@@ -107,7 +118,7 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
           aiModel,
           presetId: selectedPresetId,
         });
-        router.push(`/chat/${newChat._id}`);
+        router.push(getLocalePath(`/chat/${newChat._id}`));
       } catch (startError) {
         console.error('채팅 생성 중 오류:', startError);
         setError('채팅을 시작할 수 없습니다. 잠시 후 다시 시도해주세요.');
@@ -116,15 +127,16 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
   };
 
   const handleEdit = () => {
-    router.push(`/characters/${params.id}/edit`);
+    router.push(getLocalePath(`/characters/${params.id}/edit`));
   };
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/characters/${params.id}`);
+      await characterService.deleteCharacter(params.id);
+      setDeleteDialogOpen(false);
       setSuccessMessage('캐릭터가 삭제되었습니다.');
       setTimeout(() => {
-        router.push('/creator/dashboard');
+        router.push(creatorDashboardPath);
       }, 1500);
     } catch (error: any) {
       console.error('캐릭터 삭제 중 오류가 발생했습니다:', error);
@@ -176,7 +188,7 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
           </Typography>
           <Button 
             variant="contained" 
-            onClick={() => router.push('/characters')}
+            onClick={() => router.push(charactersPath)}
             sx={{ mt: 2 }}
           >
             캐릭터 목록으로 돌아가기
@@ -199,6 +211,21 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
             {successMessage}
           </Alert>
         </Snackbar>
+
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+          <DialogTitle>캐릭터 삭제</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary">
+              "{character?.name}" 캐릭터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
+            <Button color="error" onClick={handleDelete}>
+              삭제
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Snackbar
           open={!!error}
@@ -440,9 +467,10 @@ export default function CharacterDetailPage({ params }: { params: { id: string }
             <Button
               variant="outlined"
               size="small"
-              onClick={() => router.push(`/profile/${character?.creator?._id}`)}
+              onClick={() => creatorProfilePath && router.push(creatorProfilePath)}
+              disabled={!creatorProfilePath}
             >
-              프로필 보기
+              {isOwner ? '내 크리에이터 페이지' : '크리에이터 페이지'}
             </Button>
           </Box>
         </Box>

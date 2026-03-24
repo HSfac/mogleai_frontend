@@ -251,7 +251,7 @@ export default function PricingPage() {
                       variant={pkg.popular ? 'contained' : 'outlined'}
                       color="secondary"
                       fullWidth
-                      sx={{ borderRadius: 999, py: 1.5 }}
+                      sx={{ borderRadius: '12px', py: 1.5 }}
                       onClick={() => handleBuyTokens(pkg)}
                       disabled={requesting}
                     >
@@ -309,7 +309,7 @@ export default function PricingPage() {
                   size="small"
                   color="error"
                   onClick={handleRemoveCoupon}
-                  sx={{ borderRadius: 999 }}
+                  sx={{ borderRadius: '12px' }}
                 >
                   제거
                 </Button>
@@ -343,7 +343,7 @@ export default function PricingPage() {
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || !couponCode.trim()}
                   sx={{
-                    borderRadius: 999,
+                    borderRadius: '12px',
                     px: 4,
                     whiteSpace: 'nowrap',
                     minWidth: { xs: '100%', sm: 'auto' },
@@ -375,7 +375,7 @@ export default function PricingPage() {
               <Button
                 variant="contained"
                 color="secondary"
-                sx={{ width: 'fit-content', borderRadius: 999 }}
+                sx={{ width: 'fit-content', borderRadius: '12px' }}
                 onClick={handleSubscribe}
                 disabled={requesting}
               >

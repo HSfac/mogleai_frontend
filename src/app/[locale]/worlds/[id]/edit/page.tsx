@@ -28,11 +28,13 @@ import PageLayout from '@/components/PageLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { worldService } from '@/services/worldService';
 import { UpdateWorldDto, Visibility, World } from '@/types/world';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function EditWorldPage() {
   const router = useRouter();
   const params = useParams();
   const { user, isAuthenticated } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function EditWorldPage() {
 
       // 권한 확인
       if (!user || world.creator?._id !== user._id) {
-        router.push(`/worlds/${worldId}`);
+        router.push(getLocalePath(`/worlds/${worldId}`));
         return;
       }
 
@@ -81,7 +83,7 @@ export default function EditWorldPage() {
       });
     } catch (error) {
       console.error('세계관을 불러오는데 실패했습니다:', error);
-      router.push('/worlds');
+      router.push(getLocalePath('/worlds'));
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,7 @@ export default function EditWorldPage() {
 
     try {
       await worldService.updateWorld(worldId, formData);
-      router.push(`/worlds/${worldId}`);
+      router.push(getLocalePath(`/worlds/${worldId}`));
     } catch (err: any) {
       setError(err.response?.data?.message || '세계관 수정에 실패했습니다.');
     } finally {
@@ -431,10 +433,10 @@ export default function EditWorldPage() {
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#ff3366' },
                         '& .MuiSvgIcon-root': { color: '#666' },
                       }}
-                    >
+                      >
                       <MenuItem value={Visibility.PUBLIC}>전체 공개</MenuItem>
+                      <MenuItem value={Visibility.UNLISTED}>링크 공개</MenuItem>
                       <MenuItem value={Visibility.PRIVATE}>비공개</MenuItem>
-                      <MenuItem value={Visibility.FOLLOWERS_ONLY}>팔로워 전용</MenuItem>
                     </Select>
                   </FormControl>
 

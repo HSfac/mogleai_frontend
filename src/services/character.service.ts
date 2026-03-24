@@ -73,6 +73,12 @@ export const characterService = {
     return response.data;
   },
 
+  // 공개 크리에이터 캐릭터 목록
+  async getPublicCreatorCharacters(creatorId: string) {
+    const response = await api.get(`/characters/creator/public/${creatorId}`);
+    return response.data;
+  },
+
   // ==================== 이미지 분석 API ====================
 
   // 이미지 분석으로 캐릭터 초안 생성

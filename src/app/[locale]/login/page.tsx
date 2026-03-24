@@ -99,7 +99,7 @@ export default function LoginPage() {
             zIndex: 10,
           }}
         >
-          <Link href="/" passHref style={{ textDecoration: 'none' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
             <Button
               variant="outlined"
               startIcon={<HomeIcon />}
@@ -196,11 +196,9 @@ export default function LoginPage() {
               />
 
               <Box sx={{ textAlign: 'right', mt: -1 }}>
-                <Link href="/forgot-password" passHref legacyBehavior>
-                  <MuiLink component="a" sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
-                    비밀번호를 잊으셨나요?
-                  </MuiLink>
-                </Link>
+                <MuiLink component={Link} href="/forgot-password" sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
+                  비밀번호를 잊으셨나요?
+                </MuiLink>
               </Box>
 
               <Button
@@ -278,11 +276,9 @@ export default function LoginPage() {
 
               <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 계정이 없으신가요?{' '}
-                <Link href="/register" passHref legacyBehavior>
-                  <MuiLink component="a" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                    회원가입하기
-                  </MuiLink>
-                </Link>
+                <MuiLink component={Link} href="/register" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                  회원가입하기
+                </MuiLink>
               </Typography>
             </Box>
           </Box>

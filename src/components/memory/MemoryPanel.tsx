@@ -70,6 +70,7 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
     includeInContext: true,
   });
   const [saving, setSaving] = useState(false);
+  const totalMemories = (stats?.summaryCount || 0) + (stats?.eventCount || 0);
 
   useEffect(() => {
     loadData();
@@ -191,6 +192,16 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
     });
   };
 
+  const formatEventCategory = (category?: string) => {
+    const labels: Record<string, string> = {
+      flag: '플래그',
+      relationship: '관계',
+      scene: '장면',
+    };
+
+    return category ? labels[category] || category : null;
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" py={4}>
@@ -218,7 +229,7 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
       >
         <Tab
           icon={<HistoryIcon />}
-          label={`요약 (${stats?.summaryCount || 0})`}
+          label={`기억 (${totalMemories})`}
           iconPosition="start"
         />
         <Tab
@@ -233,9 +244,9 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
         <Box>
           {summaries.length === 0 ? (
             <Typography color="text.secondary" variant="body2" textAlign="center" py={4}>
-              아직 메모리 요약이 없습니다.
+              아직 저장된 기억이 없습니다.
               <br />
-              대화가 진행되면 자동으로 요약이 생성됩니다.
+              대화가 진행되면 사건 기억과 요약이 자동으로 생성됩니다.
             </Typography>
           ) : (
             <Stack spacing={2}>
@@ -260,9 +271,35 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
                       sx={{ cursor: 'pointer' }}
                     >
                       <Box>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          메시지 {summary.messageRange.start} - {summary.messageRange.end}
-                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            메시지 {summary.messageRange.start} - {summary.messageRange.end}
+                          </Typography>
+                          <Chip
+                            label={summary.memoryType === 'event' ? '사건' : '요약'}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              bgcolor:
+                                summary.memoryType === 'event'
+                                  ? 'rgba(255,51,102,0.12)'
+                                  : 'rgba(33,150,243,0.10)',
+                              color:
+                                summary.memoryType === 'event'
+                                  ? '#c2185b'
+                                  : '#1565c0',
+                              fontSize: '0.68rem',
+                            }}
+                          />
+                          {formatEventCategory(summary.eventCategory) ? (
+                            <Chip
+                              label={formatEventCategory(summary.eventCategory)}
+                              size="small"
+                              variant="outlined"
+                              sx={{ height: 20, fontSize: '0.68rem' }}
+                            />
+                          ) : null}
+                        </Stack>
                         <Typography variant="caption" color="text.secondary">
                           {formatDate(summary.createdAt)}
                         </Typography>
@@ -293,7 +330,7 @@ export default function MemoryPanel({ chatId, characterId }: MemoryPanelProps) {
                         {summary.keyEvents.length > 0 && (
                           <Box mt={1}>
                             <Typography variant="caption" fontWeight={600}>
-                              주요 이벤트:
+                              {summary.memoryType === 'event' ? '핵심 변화:' : '주요 이벤트:'}
                             </Typography>
                             <Stack direction="row" spacing={0.5} flexWrap="wrap" mt={0.5}>
                               {summary.keyEvents.map((event, idx) => (
