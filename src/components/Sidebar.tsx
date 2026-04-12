@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 import { notificationService } from '@/services/notificationService';
+import { ensureLocalizedPath, localizePath, normalizeLocale } from '@/lib/localePath';
 
 interface SidebarProps {
   onWidthChange?: (width: number) => void;
@@ -100,7 +101,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       );
     }
     if (notification.link) {
-      router.push(notification.link);
+      router.push(ensureLocalizedPath(locale, notification.link));
       handleNotificationClose();
     }
   };
@@ -126,8 +127,8 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const notificationOpen = Boolean(notificationAnchor);
 
   // Extract locale from pathname
-  const locale = pathname.split('/')[1] || 'ko';
-  const getLocalePath = (path: string) => `/${locale}${path}`;
+  const locale = normalizeLocale(pathname.split('/')[1]);
+  const getLocalePath = (path: string) => localizePath(locale, path);
 
   const menuItems = [
     { icon: <HomeIcon />, label: t('nav.home'), path: '/' },

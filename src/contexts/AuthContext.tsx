@@ -4,8 +4,9 @@ import { createContext, useContext, useState, useEffect, ReactNode, useCallback 
 import { authService } from '@/services/authService';
 import { userService } from '@/services/userService';
 import type { User } from '@/types/user';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import LoginModal from '@/components/auth/LoginModal';
+import { localizePath } from '@/lib/localePath';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = pathname?.split('/')[1];
+  const getLocalePath = useCallback(
+    (path: string) => localizePath(locale, path),
+    [locale],
+  );
 
   // 로그인 모달 상태
   const [loginModalOpen, setLoginModalOpen] = useState(false);
@@ -78,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchUser();
       // 모달에서 로그인한 경우 리다이렉트하지 않음
       if (!loginModalOpen) {
-        router.push('/');
+        router.push(getLocalePath('/'));
       }
     } catch (error) {
       setLoading(false);
@@ -94,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchUser();
       // 모달에서 회원가입한 경우 리다이렉트하지 않음
       if (!loginModalOpen) {
-        router.push('/');
+        router.push(getLocalePath('/'));
       }
     } catch (error) {
       setLoading(false);
@@ -106,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authService.logout();
     setUser(null);
     setToken(null);
-    router.push('/');
+    router.push(getLocalePath('/'));
   };
 
   const refreshUser = async () => {

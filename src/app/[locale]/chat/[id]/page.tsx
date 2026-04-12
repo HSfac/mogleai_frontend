@@ -1259,7 +1259,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
   const isAdultMode = character.isAdultContent || chat.isAdultContent;
 
   return (
-    <PageLayout hideFooter>
+    <PageLayout hideBottomNav>
       <MoodProvider initialMood={isAdultMode ? 'romantic' : 'normal'}>
         <ChatContent id={id} chat={chat} setChat={setChat} character={character} />
       </MoodProvider>

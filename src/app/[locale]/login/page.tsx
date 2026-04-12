@@ -18,7 +18,6 @@ import {
   alpha,
 } from '@mui/material';
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
 import GoogleIcon from '@mui/icons-material/Google';
@@ -31,6 +30,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
 import { authService } from '@/services/authService';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
@@ -38,8 +38,8 @@ const socialPlatforms = [
 ];
 
 export default function LoginPage() {
-  const router = useRouter();
   const { login } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const t = useTranslations();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -99,7 +99,7 @@ export default function LoginPage() {
             zIndex: 10,
           }}
         >
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href={getLocalePath('/')} style={{ textDecoration: 'none' }}>
             <Button
               variant="outlined"
               startIcon={<HomeIcon />}
@@ -196,7 +196,7 @@ export default function LoginPage() {
               />
 
               <Box sx={{ textAlign: 'right', mt: -1 }}>
-                <MuiLink component={Link} href="/forgot-password" sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
+                <MuiLink component={Link} href={getLocalePath('/forgot-password')} sx={{ color: '#666', fontSize: '0.9rem', '&:hover': { color: '#ff3366' } }}>
                   비밀번호를 잊으셨나요?
                 </MuiLink>
               </Box>
@@ -276,7 +276,7 @@ export default function LoginPage() {
 
               <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 계정이 없으신가요?{' '}
-                <MuiLink component={Link} href="/register" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                <MuiLink component={Link} href={getLocalePath('/register')} sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                   회원가입하기
                 </MuiLink>
               </Typography>

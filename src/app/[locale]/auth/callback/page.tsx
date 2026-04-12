@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Box, CircularProgress, Typography, Paper, Container } from '@mui/material';
 import { authService } from '@/services/authService';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 export default function AuthCallbackPage() {
-  const router = useRouter();
+  const { push } = useLocaleNavigation();
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
 
@@ -20,7 +21,7 @@ export default function AuthCallbackPage() {
         if (errorParam) {
           setError('소셜 로그인에 실패했습니다.');
           setTimeout(() => {
-            router.push('/login');
+            push('/login');
           }, 2000);
           return;
         }
@@ -28,7 +29,7 @@ export default function AuthCallbackPage() {
         if (!token) {
           setError('인증 토큰이 없습니다.');
           setTimeout(() => {
-            router.push('/login');
+            push('/login');
           }, 2000);
           return;
         }
@@ -38,24 +39,24 @@ export default function AuthCallbackPage() {
 
         if (result.success) {
           // 로그인 성공 - 메인 페이지로 리다이렉트
-          router.push('/');
+          push('/');
         } else {
           setError('로그인 처리 중 오류가 발생했습니다.');
           setTimeout(() => {
-            router.push('/login');
+            push('/login');
           }, 2000);
         }
       } catch (error) {
         console.error('소셜 로그인 콜백 처리 실패:', error);
         setError('로그인 처리 중 오류가 발생했습니다.');
         setTimeout(() => {
-          router.push('/login');
+          push('/login');
         }, 2000);
       }
     };
 
     handleCallback();
-  }, [searchParams, router]);
+  }, [push, searchParams]);
 
   return (
     <Container maxWidth="sm">

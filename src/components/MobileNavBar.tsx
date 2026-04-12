@@ -16,6 +16,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
+import { localizePath, normalizeLocale } from '@/lib/localePath';
 
 export default function MobileNavBar() {
   const router = useRouter();
@@ -26,8 +27,8 @@ export default function MobileNavBar() {
   const t = useTranslations();
 
   // Extract locale from pathname
-  const locale = pathname.split('/')[1] || 'ko';
-  const getLocalePath = (path: string) => `/${locale}${path}`;
+  const locale = normalizeLocale(pathname.split('/')[1]);
+  const getLocalePath = (path: string) => localizePath(locale, path);
 
   const value = useMemo(() => {
     const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/';

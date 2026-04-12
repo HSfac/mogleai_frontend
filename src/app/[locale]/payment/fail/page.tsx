@@ -19,6 +19,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HomeIcon from '@mui/icons-material/Home';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 // 에러 코드별 메시지 매핑
 const ERROR_MESSAGES: Record<string, string> = {
@@ -40,6 +41,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 export default function PaymentFailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { getLocalePath } = useLocaleNavigation();
 
   const errorCode = searchParams.get('code') || '';
   const errorMessage = searchParams.get('message') || '';
@@ -110,7 +112,7 @@ export default function PaymentFailPage() {
               variant="contained"
               size="large"
               startIcon={<RefreshIcon />}
-              onClick={() => router.push('/pricing')}
+              onClick={() => router.push(getLocalePath('/tokens'))}
               sx={{
                 borderRadius: 2,
                 py: 1.5,
@@ -126,7 +128,7 @@ export default function PaymentFailPage() {
                 fullWidth
                 variant="outlined"
                 startIcon={<HomeIcon />}
-                onClick={() => router.push('/')}
+                onClick={() => router.push(getLocalePath('/'))}
                 sx={{ borderRadius: 2, py: 1.5 }}
               >
                 홈으로

@@ -18,3 +18,29 @@ export function localizePath(locale: string | string[] | undefined, path: string
 
   return `/${normalizedLocale}${normalizedPath}`;
 }
+
+export function ensureLocalizedPath(
+  locale: string | string[] | undefined,
+  path: string,
+): string {
+  if (
+    path.startsWith('http://') ||
+    path.startsWith('https://') ||
+    path.startsWith('mailto:') ||
+    path.startsWith('tel:') ||
+    path.startsWith('#')
+  ) {
+    return path;
+  }
+
+  if (
+    path === '/ko' ||
+    path === '/en' ||
+    path.startsWith('/ko/') ||
+    path.startsWith('/en/')
+  ) {
+    return path;
+  }
+
+  return localizePath(locale, path);
+}

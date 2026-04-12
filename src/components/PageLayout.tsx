@@ -9,15 +9,18 @@ import { ReactNode, useState } from 'react';
 interface PageLayoutProps {
   children: ReactNode;
   showHeader?: boolean;
+  hideBottomNav?: boolean;
   hideFooter?: boolean;
 }
 
 export default function PageLayout({
   children,
   showHeader = true,
-  hideFooter = false,
+  hideBottomNav,
+  hideFooter,
 }: PageLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState(240);
+  const shouldHideBottomNav = hideBottomNav ?? hideFooter ?? false;
 
   return (
     <Box
@@ -36,7 +39,7 @@ export default function PageLayout({
           width: '100%',
           ml: showHeader ? { xs: 0, md: `${sidebarWidth}px` } : 0,
           minHeight: '100vh',
-          pb: showHeader && !hideFooter ? { xs: 10, md: 0 } : 0,
+          pb: showHeader && !shouldHideBottomNav ? { xs: 10, md: 0 } : 0,
           transition: 'margin-left 0.3s ease',
         }}
       >
@@ -44,7 +47,7 @@ export default function PageLayout({
         {children}
       </Box>
 
-      {showHeader && !hideFooter && <MobileNavBar />}
+      {showHeader && !shouldHideBottomNav && <MobileNavBar />}
     </Box>
   );
 }

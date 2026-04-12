@@ -20,7 +20,6 @@ import {
   alpha,
 } from '@mui/material';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
 import GoogleIcon from '@mui/icons-material/Google';
@@ -31,6 +30,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import HomeIcon from '@mui/icons-material/Home';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
@@ -45,8 +45,8 @@ const initialForm = {
 };
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { register } = useAuth();
+  const { getLocalePath } = useLocaleNavigation();
   const [formData, setFormData] = useState(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -114,7 +114,7 @@ export default function RegisterPage() {
             zIndex: 10,
           }}
         >
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href={getLocalePath('/')} style={{ textDecoration: 'none' }}>
             <Button
               variant="outlined"
               startIcon={<HomeIcon />}
@@ -250,10 +250,10 @@ export default function RegisterPage() {
                 }
                 label={
                   <Typography variant="body2" sx={{ color: '#999' }}>
-                    <MuiLink component={Link} href="/terms" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                    <MuiLink component={Link} href={getLocalePath('/terms')} sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                       이용약관
                     </MuiLink>{' '}및{' '}
-                    <MuiLink component={Link} href="/privacy" sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                    <MuiLink component={Link} href={getLocalePath('/privacy')} sx={{ color: '#ff3366', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                       개인정보처리방침
                     </MuiLink>에 동의합니다.
                   </Typography>
@@ -335,7 +335,7 @@ export default function RegisterPage() {
 
               <Typography variant="body1" sx={{ textAlign: 'center', color: '#999' }}>
                 이미 계정이 있으신가요?{' '}
-                <MuiLink component={Link} href="/login" sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                <MuiLink component={Link} href={getLocalePath('/login')} sx={{ color: '#ff3366', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
                   로그인하기
                 </MuiLink>
               </Typography>

@@ -15,16 +15,16 @@ import {
   StepLabel,
 } from '@mui/material';
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PageLayout from '@/components/PageLayout';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import api from '@/lib/api';
+import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
 const steps = ['이메일 입력', '인증 코드 입력', '새 비밀번호 설정'];
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
+  const { push, getLocalePath } = useLocaleNavigation();
   const [activeStep, setActiveStep] = useState(0);
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
@@ -87,7 +87,7 @@ export default function ForgotPasswordPage() {
 
       // 3초 후 로그인 페이지로 이동
       setTimeout(() => {
-        router.push('/login');
+        push('/login');
       }, 3000);
     } catch (error: any) {
       console.error('비밀번호 재설정 중 오류:', error);
@@ -114,7 +114,7 @@ export default function ForgotPasswordPage() {
       >
         <Container maxWidth="sm">
           <Box sx={{ mb: 4 }}>
-            <Link href="/login">
+            <Link href={getLocalePath('/login')}>
               <Button
                 startIcon={<ArrowBackIcon />}
                 sx={{ color: '#999', mb: 3, '&:hover': { color: '#ff3366' } }}

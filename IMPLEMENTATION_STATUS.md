@@ -57,6 +57,6 @@
 
 ## 📝 참고사항
 
-- 백엔드 API 엔드포인트: `http://localhost:3000` (기본값)
+- 백엔드 API 엔드포인트: `http://localhost:5001` (기본값)
 - 환경변수 설정 필요: `.env.local`에 `NEXT_PUBLIC_API_URL` 추가
 - Chakra UI와 Material-UI 혼용 중 - 통일 필요 (선택사항)
