@@ -129,6 +129,7 @@ export default function AdminDashboardPage() {
   const [settlements, setSettlements] = useState<any[]>([]);
   const [settlementStats, setSettlementStats] = useState<any>(null);
   const [faqs, setFaqs] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
 
   // 검색
   const [userSearch, setUserSearch] = useState('');
@@ -232,6 +233,28 @@ export default function AdminDashboardPage() {
     fetchPayments(page);
   };
 
+  const transformChartData = (raw: any): any[] => {
+    if (!raw) return [];
+    const map = new Map<string, any>();
+
+    (raw.dailyUsers || []).forEach(({ _id, count }: any) => {
+      if (!map.has(_id)) map.set(_id, { date: _id });
+      map.get(_id)!.users = count;
+    });
+    (raw.dailyRevenue || []).forEach(({ _id, revenue }: any) => {
+      if (!map.has(_id)) map.set(_id, { date: _id });
+      map.get(_id)!.revenue = revenue;
+    });
+    (raw.dailyChats || []).forEach(({ _id, count }: any) => {
+      if (!map.has(_id)) map.set(_id, { date: _id });
+      map.get(_id)!.conversations = count;
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((d) => ({ ...d, date: d.date.slice(5).replace('-', '/') }));
+  };
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
@@ -247,6 +270,7 @@ export default function AdminDashboardPage() {
         couponsData,
         settlementsData,
         faqsData,
+        chartStatsData,
       ] = await Promise.all([
         adminService.getDashboardStats(),
         adminService.getUsers(1, 10),
@@ -259,6 +283,7 @@ export default function AdminDashboardPage() {
         adminService.getCoupons(1, 20),
         adminService.getSettlements(1, 20),
         adminService.getFAQs(1, 50),
+        adminService.getChartStats(30),
       ]);
 
       setStats(statsData);
@@ -278,6 +303,7 @@ export default function AdminDashboardPage() {
       setSettlements(settlementsData.settlements || []);
       setSettlementStats(settlementsData.statusStats || null);
       setFaqs(faqsData.faqs || []);
+      setChartData(transformChartData(chartStatsData));
     } catch (error: any) {
       console.error('대시보드 데이터 로딩 실패:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -813,7 +839,7 @@ export default function AdminDashboardPage() {
                 }}
               />
             </Stack>
-            <DashboardCharts />
+            <DashboardCharts chartData={chartData.length > 0 ? chartData : undefined} />
           </CardContent>
         </Card>
 
