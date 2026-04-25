@@ -159,6 +159,8 @@ export default function AdminDashboardPage() {
   const [selectedSettlement, setSelectedSettlement] = useState<any>(null);
   const [adminNote, setAdminNote] = useState('');
   const [transactionId, setTransactionId] = useState('');
+  const [tokenAdjustAmount, setTokenAdjustAmount] = useState('');
+  const [tokenAdjustReason, setTokenAdjustReason] = useState('');
 
   // 폼 데이터
   const [formData, setFormData] = useState<any>({});
@@ -410,9 +412,28 @@ export default function AdminDashboardPage() {
     try {
       const userDetail = await adminService.getUserDetail(userId);
       setSelectedUser(userDetail);
+      setTokenAdjustAmount('');
+      setTokenAdjustReason('');
       setUserDetailDialog(true);
     } catch (error) {
       setError('사용자 정보를 불러오는데 실패했습니다.');
+    }
+  };
+
+  const handleAdjustTokens = async (userId: string) => {
+    const amount = parseInt(tokenAdjustAmount, 10);
+    if (!tokenAdjustAmount || isNaN(amount) || amount === 0) {
+      setError('조정할 토큰 수를 입력해주세요. (양수=지급, 음수=차감)');
+      return;
+    }
+    try {
+      const result = await adminService.adjustUserTokens(userId, amount, tokenAdjustReason);
+      setSelectedUser((prev: any) => prev ? { ...prev, tokens: result.after ?? result.data?.after } : prev);
+      setTokenAdjustAmount('');
+      setTokenAdjustReason('');
+      setError(`토큰 조정 완료: ${amount > 0 ? '+' : ''}${amount.toLocaleString()} 토큰`);
+    } catch (error) {
+      setError('토큰 조정에 실패했습니다.');
     }
   };
 
@@ -1737,6 +1758,54 @@ export default function AdminDashboardPage() {
                   </Typography>
                 </Box>
               </Stack>
+
+              {/* 토큰 직접 조정 */}
+              <Box
+                sx={{
+                  mt: 1,
+                  p: 2,
+                  borderRadius: 2,
+                  border: '1px solid rgba(255,200,50,0.2)',
+                  bgcolor: 'rgba(255,200,50,0.05)',
+                }}
+              >
+                <Typography variant="caption" sx={{ color: 'rgba(255,200,50,0.9)', fontWeight: 700, letterSpacing: 0.5 }}>
+                  토큰 직접 조정
+                </Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1.2 }}>
+                  <TextField
+                    size="small"
+                    label="수량 (+지급 / -차감)"
+                    type="number"
+                    value={tokenAdjustAmount}
+                    onChange={(e) => setTokenAdjustAmount(e.target.value)}
+                    sx={{
+                      flex: 1,
+                      '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: 'rgba(255,200,50,0.6)' } },
+                      '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
+                    }}
+                  />
+                  <TextField
+                    size="small"
+                    label="사유 (선택)"
+                    value={tokenAdjustReason}
+                    onChange={(e) => setTokenAdjustReason(e.target.value)}
+                    sx={{
+                      flex: 1.5,
+                      '& .MuiOutlinedInput-root': { color: '#fff', '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '&.Mui-focused fieldset': { borderColor: 'rgba(255,200,50,0.6)' } },
+                      '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => handleAdjustTokens(selectedUser._id)}
+                    sx={{ bgcolor: 'rgba(255,200,50,0.8)', color: '#000', fontWeight: 800, '&:hover': { bgcolor: 'rgba(255,200,50,1)' }, whiteSpace: 'nowrap' }}
+                  >
+                    적용
+                  </Button>
+                </Stack>
+              </Box>
             </Stack>
           )}
         </DialogContent>

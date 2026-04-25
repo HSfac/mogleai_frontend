@@ -84,6 +84,11 @@ export const adminService = {
     return response.data;
   },
 
+  async adjustUserTokens(userId: string, amount: number, reason?: string) {
+    const response = await adminApi.put(`/admin/users/${userId}/tokens`, { amount, reason });
+    return response.data;
+  },
+
   // ==================== 캐릭터 관리 ====================
 
   async getCharacters(page: number = 1, limit: number = 20, search?: string) {
