@@ -90,6 +90,21 @@ export const chatService = {
     return response.data;
   },
 
+  async fetchTTS(chatId: string, messageIndex: number, voice?: string): Promise<ArrayBuffer> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const baseURL = (api.defaults?.baseURL as string | undefined) || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    const res = await fetch(`${baseURL}/chat/${chatId}/tts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ messageIndex, voice }),
+    });
+    if (!res.ok) throw new Error('TTS 변환 실패');
+    return res.arrayBuffer();
+  },
+
   /**
    * SSE 스트리밍 공통 헬퍼
    */

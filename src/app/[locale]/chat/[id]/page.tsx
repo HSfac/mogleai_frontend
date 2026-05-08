@@ -53,6 +53,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import EditIcon from '@mui/icons-material/Edit';
 import IosShareIcon from '@mui/icons-material/IosShare';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import StopIcon from '@mui/icons-material/Stop';
 import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 import ShareChatCard from '@/components/chat/ShareChatCard';
 import BranchPanel from '@/components/chat/BranchPanel';
@@ -200,6 +202,8 @@ interface MessageBubbleProps {
   onImageClick?: () => void;
   onRegenerate?: () => void;
   onEdit?: (index: number, currentContent: string) => void;
+  onTTS?: (index: number) => void;
+  ttsPlayingIndex?: number;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -213,6 +217,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onImageClick,
   onRegenerate,
   onEdit,
+  onTTS,
+  ttsPlayingIndex,
 }) => {
   const isUser = message.sender === 'user';
   const bubbleStyle = useMoodBubbleStyle(isUser);
@@ -317,6 +323,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     mt: 0.5,
                   }}
                 >
+                  {!isUser && onTTS && (
+                    <Tooltip title={ttsPlayingIndex === messageIndex ? '재생 중지' : '음성으로 듣기'}>
+                      <IconButton
+                        size="small"
+                        onClick={() => onTTS(messageIndex)}
+                        sx={{ color: ttsPlayingIndex === messageIndex ? theme.accentColor : 'rgba(255,255,255,0.45)', p: 0.4, '&:hover': { color: theme.accentColor } }}
+                      >
+                        {ttsPlayingIndex === messageIndex
+                          ? <StopIcon sx={{ fontSize: 15 }} />
+                          : <VolumeUpIcon sx={{ fontSize: 15 }} />
+                        }
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {!isUser && isLastAiMessage && onRegenerate && (
                     <Tooltip title="응답 재생성">
                       <IconButton
@@ -444,6 +464,10 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 
   // 분기 패널 상태
   const [showBranchPanel, setShowBranchPanel] = useState(false);
+
+  // TTS 상태
+  const [ttsPlayingIndex, setTtsPlayingIndex] = useState<number>(-1);
+  const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (user?.tokens !== undefined) {
