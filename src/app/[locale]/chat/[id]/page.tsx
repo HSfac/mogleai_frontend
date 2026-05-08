@@ -135,6 +135,13 @@ interface ChatBranch {
   createdAt?: Date;
 }
 
+// 모델별 컨텍스트 한도 (tokens)
+const MODEL_CONTEXT_LIMIT: Record<string, number> = {
+  gpt4: 128_000,
+  claude3: 200_000,
+  grok: 131_072,
+};
+
 interface Chat {
   _id: string;
   character: string;
@@ -146,6 +153,7 @@ interface Chat {
   isAdultContent?: boolean;
   branches?: ChatBranch[];
   activeBranchIndex?: number;
+  totalTokensUsed?: number;
 }
 
 interface Character {
@@ -639,6 +647,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
             ...prev,
             messages: updated,
             sessionState: payload?.state ?? prev.sessionState,
+            totalTokensUsed: (prev.totalTokensUsed ?? 0) + (payload?.tokensUsed ?? 0),
           };
         });
 
@@ -1140,6 +1149,40 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                       },
                     }}
                   />
+                  {/* 컨텍스트 사용량 바 */}
+                  {(() => {
+                    const limit = MODEL_CONTEXT_LIMIT[chat.aiModel] ?? 128_000;
+                    const used = chat.totalTokensUsed ?? 0;
+                    const pct = Math.min(100, Math.round((used / limit) * 100));
+                    const barColor = pct >= 80 ? '#ff5f5f' : pct >= 50 ? '#ffbf6b' : '#4caf50';
+                    return (
+                      <Box sx={{ mt: 1.2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.4 }}>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.65rem' }}>
+                            컨텍스트 사용량
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: barColor, fontSize: '0.65rem', fontWeight: 600 }}>
+                            {used.toLocaleString()} / {(limit / 1000).toFixed(0)}K tokens ({pct}%)
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={pct}
+                          sx={{
+                            height: 4,
+                            borderRadius: '4px',
+                            bgcolor: 'rgba(255,255,255,0.06)',
+                            '& .MuiLinearProgress-bar': {
+                              borderRadius: '4px',
+                              bgcolor: barColor,
+                              transition: 'width 0.6s ease',
+                            },
+                          }}
+                        />
+                      </Box>
+                    );
+                  })()}
+
                   <Stack
                     direction={{ xs: 'column', md: 'row' }}
                     spacing={1.5}
