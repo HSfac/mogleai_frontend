@@ -90,6 +90,11 @@ export const chatService = {
     return response.data;
   },
 
+  async generateSceneImage(chatId: string): Promise<{ imageUrl: string }> {
+    const response = await api.post(`/chat/${chatId}/image-gen`);
+    return response.data;
+  },
+
   async fetchTTS(chatId: string, messageIndex: number, voice?: string): Promise<ArrayBuffer> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const baseURL = (api.defaults?.baseURL as string | undefined) || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';

@@ -99,4 +99,14 @@ export const characterService = {
     const response = await api.post('/characters/generate-field', { fieldName, context });
     return response.data;
   },
+
+  async submitReview(characterId: string, rating: number, content?: string) {
+    const response = await api.post(`/characters/${characterId}/reviews`, { rating, content });
+    return response.data;
+  },
+
+  async getReviews(characterId: string) {
+    const response = await api.get(`/characters/${characterId}/reviews`);
+    return response.data;
+  },
 };

@@ -28,6 +28,8 @@ import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import AddIcon from '@mui/icons-material/Add';
 import TuneIcon from '@mui/icons-material/Tune';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import Collapse from '@mui/material/Collapse';
 import CloseIcon from '@mui/icons-material/Close';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import PageLayout from '@/components/PageLayout';
@@ -187,6 +189,8 @@ export default function CharactersPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [characters, setCharacters] = useState<Character[]>([]);
   const [popularCharacters, setPopularCharacters] = useState<Character[]>([]);
+  const [adultFilter, setAdultFilter] = useState<'all' | 'safe' | 'adult'>('all');
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -275,8 +279,12 @@ export default function CharactersPage() {
     }
   };
 
-  const displayedCharacters =
-    tabValue === 'recommend' ? characters : popularCharacters;
+  const baseCharacters = tabValue === 'recommend' ? characters : popularCharacters;
+  const displayedCharacters = baseCharacters.filter((c) => {
+    if (adultFilter === 'safe' && c.isAdultContent) return false;
+    if (adultFilter === 'adult' && !c.isAdultContent) return false;
+    return true;
+  });
 
   return (
     <PageLayout>
@@ -464,8 +472,62 @@ export default function CharactersPage() {
                   />
                 );
               })}
+              {/* 필터 토글 버튼 */}
+              <Chip
+                icon={<FilterAltIcon sx={{ fontSize: 14 }} />}
+                label="필터"
+                onClick={() => setShowFilterPanel((v) => !v)}
+                sx={{
+                  bgcolor: showFilterPanel ? '#ff3366' : 'rgba(255,255,255,0.05)',
+                  color: showFilterPanel ? '#fff' : '#aaa',
+                  border: showFilterPanel ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  fontWeight: 600,
+                  fontSize: { xs: '0.75rem', md: '0.85rem' },
+                  height: { xs: 32, md: 36 },
+                }}
+              />
             </Stack>
           </Box>
+
+          {/* 고급 필터 패널 */}
+          <Collapse in={showFilterPanel}>
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                borderRadius: 2,
+                bgcolor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                maxWidth: 600,
+                mx: 'auto',
+              }}
+            >
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block', mb: 1 }}>
+                연령 제한
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                {[
+                  { value: 'all', label: '전체' },
+                  { value: 'safe', label: '전체이용가' },
+                  { value: 'adult', label: '성인 전용' },
+                ].map(({ value, label }) => (
+                  <Chip
+                    key={value}
+                    label={label}
+                    onClick={() => setAdultFilter(value as any)}
+                    size="small"
+                    sx={{
+                      bgcolor: adultFilter === value ? '#ff3366' : 'rgba(255,255,255,0.06)',
+                      color: adultFilter === value ? '#fff' : 'rgba(255,255,255,0.6)',
+                      border: adultFilter === value ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          </Collapse>
         </Container>
       </Box>
 

@@ -58,6 +58,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 import ShareChatCard from '@/components/chat/ShareChatCard';
 import BranchPanel from '@/components/chat/BranchPanel';
+import ReviewDialog from '@/components/chat/ReviewDialog';
 
 // 새로운 분위기 시스템 import
 import {
@@ -287,12 +288,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 <Typography sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {message.content}
                 </Typography>
-              ) : (
-                <EmotionText
-                  text={message.content}
-                  sx={{ lineHeight: 1.7 }}
-                />
-              )}
+              ) : (() => {
+                const imgMatch = message.content.match(/^!\[.*?\]\((https?:\/\/[^\s)]+)\)$/);
+                if (imgMatch) {
+                  return (
+                    <Box
+                      component="img"
+                      src={imgMatch[1]}
+                      alt="생성된 이미지"
+                      sx={{ maxWidth: '100%', borderRadius: 2, display: 'block' }}
+                    />
+                  );
+                }
+                return <EmotionText text={message.content} sx={{ lineHeight: 1.7 }} />;
+              })()}
               {isLastInGroup && (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: isUser ? 'flex-end' : 'flex-start', gap: 0.8, mt: 0.5 }}>
                   <Typography
@@ -468,6 +477,12 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
   // TTS 상태
   const [ttsPlayingIndex, setTtsPlayingIndex] = useState<number>(-1);
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 이미지 생성 상태
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
+  // 리뷰 다이얼로그 상태
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user?.tokens !== undefined) {
@@ -849,6 +864,65 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
         setIsSending(false);
       },
     });
+  };
+
+  const handleTTS = async (messageIndex: number) => {
+    // 이미 재생 중이면 중지
+    if (ttsPlayingIndex === messageIndex) {
+      ttsAudioRef.current?.pause();
+      ttsAudioRef.current = null;
+      setTtsPlayingIndex(-1);
+      return;
+    }
+    // 기존 재생 중지
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause();
+      ttsAudioRef.current = null;
+    }
+    setTtsPlayingIndex(messageIndex);
+    try {
+      const arrayBuffer = await chatService.fetchTTS(id as string, messageIndex);
+      const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      audio.onended = () => {
+        setTtsPlayingIndex(-1);
+        URL.revokeObjectURL(url);
+        ttsAudioRef.current = null;
+      };
+      audio.play();
+    } catch {
+      setTtsPlayingIndex(-1);
+      setError('음성 변환에 실패했습니다.');
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!chat || isGeneratingImage) return;
+    setIsGeneratingImage(true);
+    // 생성 중 버블 추가
+    setChat((prev) => {
+      if (!prev) return prev;
+      return { ...prev, messages: [...prev.messages, { sender: 'ai', content: '', timestamp: new Date() }] };
+    });
+    try {
+      const { imageUrl } = await chatService.generateSceneImage(id as string);
+      setChat((prev) => {
+        if (!prev) return prev;
+        const msgs = [...prev.messages];
+        msgs[msgs.length - 1] = { sender: 'ai', content: `![장면 이미지](${imageUrl})`, timestamp: new Date() };
+        return { ...prev, messages: msgs };
+      });
+    } catch {
+      setChat((prev) => {
+        if (!prev) return prev;
+        return { ...prev, messages: prev.messages.slice(0, -1) };
+      });
+      setError('이미지 생성에 실패했습니다.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleOpenEdit = (index: number, currentContent: string) => {
@@ -1320,6 +1394,9 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
             <MenuItem onClick={() => { setShareModalOpen(true); setAnchorEl(null); }} disabled={chat.messages.length === 0}>
               <IosShareIcon sx={{ mr: 1.5 }} /> 대화 공유
             </MenuItem>
+            <MenuItem onClick={() => { setReviewDialogOpen(true); setAnchorEl(null); }}>
+              ⭐ 캐릭터 평가하기
+            </MenuItem>
             <Divider />
             <MenuItem onClick={handleDeleteChat} sx={{ color: 'error.main' }}>
               채팅 삭제
@@ -1449,6 +1526,8 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                     onImageClick={() => setImagePreviewOpen(true)}
                     onRegenerate={!isSending ? handleRegenerate : undefined}
                     onEdit={!isSending ? handleOpenEdit : undefined}
+                    onTTS={msg.sender === 'ai' ? handleTTS : undefined}
+                    ttsPlayingIndex={ttsPlayingIndex}
                   />
                 );
               })
@@ -1538,6 +1617,30 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                   },
                 }}
               />
+              <Tooltip title="현재 장면 이미지 생성">
+                <span>
+                  <IconButton
+                    onClick={handleGenerateImage}
+                    disabled={isSending || isGeneratingImage}
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 3,
+                      border: `1px solid ${theme.accentColor}40`,
+                      color: theme.accentColor,
+                      bgcolor: `${theme.accentColor}10`,
+                      flexShrink: 0,
+                      '&:hover': { bgcolor: `${theme.accentColor}20` },
+                      '&:disabled': { opacity: 0.4 },
+                    }}
+                  >
+                    {isGeneratingImage
+                      ? <CircularProgress size={22} sx={{ color: theme.accentColor }} />
+                      : <AutoAwesomeIcon sx={{ fontSize: 22 }} />
+                    }
+                  </IconButton>
+                </span>
+              </Tooltip>
               <Button
                 variant="contained"
                 onClick={handleSendMessage}
@@ -1594,6 +1697,17 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
         <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError('')} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
           <Alert severity="error">{error}</Alert>
         </Snackbar>
+
+        {/* 캐릭터 리뷰 다이얼로그 */}
+        <ReviewDialog
+          open={reviewDialogOpen}
+          onClose={() => setReviewDialogOpen(false)}
+          onSubmit={async (rating, content) => {
+            await characterService.submitReview(character._id, rating, content);
+          }}
+          characterName={character.name}
+          accentColor={theme.accentColor}
+        />
 
         {/* 대화 공유 모달 */}
         <ShareChatCard
@@ -1685,7 +1799,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       setIsLoading(true);
       try {
         const chatData = await chatService.getChat(id);
-        setChat(chatData);
+        // 기존 메시지들의 토큰 비용 합산으로 컨텍스트 사용량 초기화
+        const initialTokens = (chatData.messages as any[]).reduce((sum: number, m: any) => sum + (m.tokenCost ?? 0), 0);
+        setChat({ ...chatData, totalTokensUsed: initialTokens });
         const characterData = await characterService.getCharacter(chatData.character);
         setCharacter(characterData);
       } catch (err: any) {
