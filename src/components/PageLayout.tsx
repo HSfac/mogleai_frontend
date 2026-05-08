@@ -34,6 +34,7 @@ export default function PageLayout({
 
       <Box
         component="main"
+        style={{ '--sidebar-width': showHeader ? `${sidebarWidth}px` : '0px' } as React.CSSProperties}
         sx={{
           flexGrow: 1,
           width: '100%',

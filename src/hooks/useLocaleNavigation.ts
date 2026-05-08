@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
 import { localizePath, normalizeLocale, type SupportedLocale } from '@/lib/localePath';
 
@@ -12,14 +13,29 @@ export function useLocaleNavigation() {
   const pathnameLocale = pathname?.split('/')[1];
   const locale: SupportedLocale = normalizeLocale(routeLocale || pathnameLocale);
 
-  const getLocalePath = (path: string) => localizePath(locale, path);
+  const getLocalePath = useCallback(
+    (path: string) => localizePath(locale, path),
+    [locale],
+  );
+
+  const push = useCallback(
+    (path: string) => router.push(localizePath(locale, path)),
+    [router, locale],
+  );
+
+  const replace = useCallback(
+    (path: string) => router.replace(localizePath(locale, path)),
+    [router, locale],
+  );
+
+  const back = useCallback(() => router.back(), [router]);
 
   return {
     locale,
     getLocalePath,
-    push: (path: string) => router.push(getLocalePath(path)),
-    replace: (path: string) => router.replace(getLocalePath(path)),
-    back: () => router.back(),
+    push,
+    replace,
+    back,
     router,
   };
 }

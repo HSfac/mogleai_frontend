@@ -444,10 +444,13 @@ export default function CreateCharacterPage() {
         imageUrl = await uploadImage();
       }
 
-      // 캐릭터 생성 데이터
+      // 캐릭터 생성 데이터 (빈 예시 대화 필터링)
       const characterData = {
         ...formData,
         profileImage: imageUrl,
+        exampleDialogues: formData.exampleDialogues.filter(
+          (d) => d.user.trim() !== '' && d.character.trim() !== '',
+        ),
       };
 
       // API 호출

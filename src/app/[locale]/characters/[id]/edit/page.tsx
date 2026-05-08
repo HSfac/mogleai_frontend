@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Box,
@@ -36,7 +36,8 @@ import { characterService } from '@/services/character.service';
 import { api } from '@/lib/api';
 import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
 
-export default function EditCharacterPage({ params }: { params: { id: string } }) {
+export default function EditCharacterPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { getLocalePath } = useLocaleNavigation();
@@ -73,8 +74,8 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const loginPath = getLocalePath('/login');
-  const characterDetailPath = getLocalePath(`/characters/${params.id}`);
-  const characterEditPath = getLocalePath(`/characters/${params.id}/edit`);
+  const characterDetailPath = getLocalePath(`/characters/${id}`);
+  const characterEditPath = getLocalePath(`/characters/${id}/edit`);
 
   // 캐릭터 데이터 불러오기
   useEffect(() => {
@@ -90,7 +91,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
     const fetchCharacter = async () => {
       try {
         setLoading(true);
-        const character = await characterService.getCharacter(params.id);
+        const character = await characterService.getCharacter(id);
 
         // 본인이 만든 캐릭터인지 확인
         if (character.creator._id !== user?._id) {
@@ -136,7 +137,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
     };
 
     fetchCharacter();
-  }, [authLoading, characterDetailPath, characterEditPath, isAuthenticated, loginPath, params.id, router, user]);
+  }, [authLoading, characterDetailPath, characterEditPath, isAuthenticated, loginPath, id, router, user]);
 
   // 입력 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -279,7 +280,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
       };
 
       // API 호출
-      await api.put(`/characters/${params.id}`, characterData);
+      await api.put(`/characters/${id}`, characterData);
 
       setSuccess('캐릭터가 성공적으로 수정되었습니다!');
 
@@ -312,7 +313,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
           <Box sx={{ mb: 4 }}>
             <Button
               startIcon={<ArrowBackIcon />}
-              onClick={() => router.push(`/characters/${params.id}`)}
+              onClick={() => router.push(`/characters/${id}`)}
               sx={{ mb: 2 }}
             >
               뒤로 가기
@@ -721,7 +722,7 @@ export default function EditCharacterPage({ params }: { params: { id: string } }
                 <Stack direction="row" spacing={2} justifyContent="flex-end">
                   <Button
                     variant="outlined"
-                    onClick={() => router.push(`/characters/${params.id}`)}
+                    onClick={() => router.push(`/characters/${id}`)}
                     disabled={saving}
                   >
                     취소

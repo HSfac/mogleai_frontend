@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, Divider, Badge, Typography, Stack, IconButton, Popover, Button, CircularProgress } from '@mui/material';
+import { Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Avatar, Divider, Badge, Typography, Stack, IconButton, Popover, Button, CircularProgress, Tooltip } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
@@ -10,6 +10,9 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TokenIcon from '@mui/icons-material/Token';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +44,7 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const t = useTranslations();
 
   const {
@@ -157,66 +160,49 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       {/* Logo */}
       <Box
         sx={{
-          p: 2.5,
+          p: 2,
           display: 'flex',
           alignItems: 'center',
           gap: 1.5,
-          cursor: 'pointer',
           borderBottom: '1px solid #2a2a2a',
           justifyContent: isCollapsed ? 'center' : 'space-between',
+          minHeight: 64,
         }}
       >
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
-          onClick={() => router.push(getLocalePath('/'))}
-        >
-          <Box
-            component="img"
-            src="/icon.png"
-            alt="몽글챗 로고"
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 2,
-            }}
-          />
-          {!isCollapsed && (
-            <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
-              {t('common.appName')}
-            </Typography>
-          )}
-        </Box>
-        {!isCollapsed && (
-          <IconButton
-            onClick={() => setIsCollapsed(true)}
-            sx={{ color: '#999', '&:hover': { color: '#fff' } }}
-          >
-            <ChevronLeftIcon />
-          </IconButton>
+        {isCollapsed ? (
+          <Tooltip title="사이드바 열기" placement="right">
+            <IconButton
+              onClick={() => setIsCollapsed(false)}
+              sx={{ color: '#999', '&:hover': { color: '#fff', bgcolor: '#2a2a2a' }, borderRadius: 2 }}
+            >
+              <ChevronRightIcon />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+              onClick={() => router.push(getLocalePath('/'))}
+            >
+              <Box component="img" src="/icon.png" alt="몽글챗 로고" sx={{ width: 32, height: 32, borderRadius: 2 }} />
+              <Typography variant="h6" fontWeight={800} sx={{ color: '#fff', fontSize: '1rem' }}>
+                {t('common.appName')}
+              </Typography>
+            </Box>
+            <Tooltip title="사이드바 닫기" placement="right">
+              <IconButton
+                onClick={() => setIsCollapsed(true)}
+                sx={{ color: '#666', '&:hover': { color: '#fff', bgcolor: '#2a2a2a' }, borderRadius: 2 }}
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+            </Tooltip>
+          </>
         )}
       </Box>
 
       {/* Menu Items */}
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
-        {isCollapsed && (
-          <ListItem disablePadding sx={{ mb: 2 }}>
-            <ListItemButton
-              onClick={() => setIsCollapsed(false)}
-              sx={{
-                borderRadius: 2,
-                py: 1.2,
-                justifyContent: 'center',
-                color: '#999',
-                '&:hover': {
-                  bgcolor: '#2a2a2a',
-                  color: '#fff',
-                },
-              }}
-            >
-              <MenuIcon />
-            </ListItemButton>
-          </ListItem>
-        )}
 
         {menuItems.map((item) => {
           const itemPath = getLocalePath(item.path);
@@ -358,44 +344,83 @@ export default function Sidebar({ onWidthChange }: SidebarProps) {
       </List>
 
       {/* User Profile */}
-      <Box sx={{ p: 2, borderTop: '1px solid #2a2a2a' }}>
+      <Box sx={{ p: 1.5, borderTop: '1px solid #2a2a2a' }}>
         {isAuthenticated ? (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              p: isCollapsed ? 1 : 1.5,
-              borderRadius: 2,
-              bgcolor: '#2a2a2a',
-              cursor: 'pointer',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              '&:hover': {
-                bgcolor: '#333',
-              },
-              transition: 'all 0.2s',
-            }}
-            onClick={() => router.push(getLocalePath('/profile'))}
-          >
-            <Avatar
-              src={user?.profileImage}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {/* 프로필 카드 */}
+            <Box
               sx={{
-                width: 40,
-                height: 40,
-                bgcolor: '#ff3366',
-                border: '2px solid #ff3366',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                p: isCollapsed ? 1 : 1.5,
+                borderRadius: 2,
+                bgcolor: '#2a2a2a',
+                cursor: 'pointer',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                '&:hover': { bgcolor: '#333' },
+                transition: 'all 0.2s',
               }}
+              onClick={() => router.push(getLocalePath('/profile'))}
             >
-              {user?.username?.[0]?.toUpperCase() || 'U'}
-            </Avatar>
-            {!isCollapsed && (
-              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#fff' }}>
-                  {user?.username || t('common.username')}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#999' }}>
-                  {t('common.profile')}
-                </Typography>
+              <Avatar src={user?.profileImage} sx={{ width: 36, height: 36, bgcolor: '#ff3366', border: '2px solid #ff3366', flexShrink: 0 }}>
+                {user?.username?.[0]?.toUpperCase() || 'U'}
+              </Avatar>
+              {!isCollapsed && (
+                <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                  <Typography variant="body2" fontWeight={700} noWrap sx={{ color: '#fff', fontSize: '0.875rem' }}>
+                    {user?.username || t('common.username')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+                    <TokenIcon sx={{ fontSize: 12, color: '#f5c842' }} />
+                    <Typography variant="caption" sx={{ color: '#f5c842', fontWeight: 600 }}>
+                      {(user?.tokens ?? 0).toLocaleString()}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#555' }}>토큰</Typography>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+
+            {/* 하단 액션 버튼들 */}
+            {isCollapsed ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
+                <Tooltip title={`토큰: ${(user?.tokens ?? 0).toLocaleString()}`} placement="right">
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 0.5 }}>
+                    <TokenIcon sx={{ fontSize: 16, color: '#f5c842' }} />
+                  </Box>
+                </Tooltip>
+                <Tooltip title="설정" placement="right">
+                  <IconButton onClick={() => router.push(getLocalePath('/settings'))} sx={{ color: '#666', borderRadius: 2, '&:hover': { color: '#fff', bgcolor: '#2a2a2a' } }}>
+                    <SettingsIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="로그아웃" placement="right">
+                  <IconButton onClick={logout} sx={{ color: '#666', borderRadius: 2, '&:hover': { color: '#ff5e62', bgcolor: 'rgba(255,94,98,0.1)' } }}>
+                    <LogoutIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  fullWidth
+                  size="small"
+                  startIcon={<SettingsIcon fontSize="small" />}
+                  onClick={() => router.push(getLocalePath('/settings'))}
+                  sx={{ color: '#666', bgcolor: '#2a2a2a', borderRadius: 2, fontSize: '0.8rem', py: 0.8, '&:hover': { color: '#fff', bgcolor: '#333' }, justifyContent: 'flex-start', px: 1.5 }}
+                >
+                  설정
+                </Button>
+                <Button
+                  fullWidth
+                  size="small"
+                  startIcon={<LogoutIcon fontSize="small" />}
+                  onClick={logout}
+                  sx={{ color: '#ff5e62', bgcolor: 'rgba(255,94,98,0.08)', borderRadius: 2, fontSize: '0.8rem', py: 0.8, '&:hover': { bgcolor: 'rgba(255,94,98,0.18)' }, justifyContent: 'flex-start', px: 1.5 }}
+                >
+                  로그아웃
+                </Button>
               </Box>
             )}
           </Box>

@@ -1,19 +1,57 @@
 import axios from 'axios';
 import { localizePath } from '@/lib/localePath';
 
+const ADMIN_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
 const adminApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
+  baseURL: ADMIN_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 관리자 토큰 추가
+function getTokenExp(token: string): number | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// 만료까지 30분 미만이면 갱신
+function shouldRefreshAdmin(token: string): boolean {
+  const exp = getTokenExp(token);
+  if (!exp) return false;
+  return exp * 1000 - Date.now() < 30 * 60 * 1000;
+}
+
+let isAdminRefreshing = false;
+
+// 어드민 토큰 추가 + 만료 임박 시 백그라운드 갱신
 adminApi.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
       const adminToken = localStorage.getItem('adminToken');
       if (adminToken) {
+        if (!isAdminRefreshing && shouldRefreshAdmin(adminToken)) {
+          isAdminRefreshing = true;
+          const regularToken = localStorage.getItem('token');
+          if (regularToken) {
+            axios
+              .post(`${ADMIN_BASE_URL}/auth/admin/exchange-token`, {}, {
+                headers: { Authorization: `Bearer ${regularToken}` },
+              })
+              .then((res) => {
+                const newToken = res.data?.data?.access_token ?? res.data?.access_token;
+                if (newToken) localStorage.setItem('adminToken', newToken);
+              })
+              .catch(() => {})
+              .finally(() => { isAdminRefreshing = false; });
+          } else {
+            isAdminRefreshing = false;
+          }
+        }
         config.headers['x-admin-token'] = adminToken;
       }
     }

@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Collapse,
   Container,
+  Dialog,
   Divider,
   IconButton,
   LinearProgress,
@@ -24,7 +25,7 @@ import {
   Grow,
   keyframes,
 } from '@mui/material';
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import PageLayout from '@/components/PageLayout';
 import SendIcon from '@mui/icons-material/Send';
@@ -48,7 +49,13 @@ import { characterService } from '@/services/character.service';
 import { ChatMode, SessionState } from '@/types/user';
 import MemoryPanel from '@/components/memory/MemoryPanel';
 import HistoryIcon from '@mui/icons-material/History';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import EditIcon from '@mui/icons-material/Edit';
+import IosShareIcon from '@mui/icons-material/IosShare';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
+import ShareChatCard from '@/components/chat/ShareChatCard';
+import BranchPanel from '@/components/chat/BranchPanel';
 
 // 새로운 분위기 시스템 import
 import {
@@ -115,6 +122,17 @@ interface Message {
   content: string;
   timestamp: Date;
   suggestedReplies?: string[];
+  tokenCost?: number;
+  isEdited?: boolean;
+  originalContent?: string;
+}
+
+interface ChatBranch {
+  _id?: string;
+  label: string;
+  branchPointIndex: number;
+  messages: Message[];
+  createdAt?: Date;
 }
 
 interface Chat {
@@ -126,6 +144,8 @@ interface Chat {
   sessionState?: SessionState;
   title?: string;
   isAdultContent?: boolean;
+  branches?: ChatBranch[];
+  activeBranchIndex?: number;
 }
 
 interface Character {
@@ -163,26 +183,40 @@ const MODE_CONFIG = {
 // 메시지 버블 컴포넌트
 interface MessageBubbleProps {
   message: Message;
+  messageIndex: number;
   character: Character;
   isLastInGroup: boolean;
   isSending: boolean;
   isLast: boolean;
+  isLastAiMessage: boolean;
+  onImageClick?: () => void;
+  onRegenerate?: () => void;
+  onEdit?: (index: number, currentContent: string) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
+  messageIndex,
   character,
   isLastInGroup,
   isSending,
   isLast,
+  isLastAiMessage,
+  onImageClick,
+  onRegenerate,
+  onEdit,
 }) => {
   const isUser = message.sender === 'user';
   const bubbleStyle = useMoodBubbleStyle(isUser);
   const { theme } = useMood();
+  const hasImage = !isUser && !!(character.profileImage || character.imageUrl);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <Grow in timeout={300}>
       <Box
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         sx={{
           display: 'flex',
           flexDirection: isUser ? 'row-reverse' : 'row',
@@ -190,23 +224,31 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           gap: 1,
           mb: isLastInGroup ? 1.5 : 0.25,
           animation: `${fadeInUp} 0.3s ease-out`,
+          position: 'relative',
         }}
       >
         {/* 아바타 */}
-        <Box sx={{ width: 36, flexShrink: 0 }}>
+        <Box sx={{ width: 48, flexShrink: 0 }}>
           {isLastInGroup && (
             <Avatar
               src={isUser ? undefined : (character.profileImage || character.imageUrl)}
+              onClick={hasImage && onImageClick ? onImageClick : undefined}
               sx={{
-                width: 36,
-                height: 36,
+                width: 48,
+                height: 48,
                 bgcolor: isUser ? theme.accentColor : 'rgba(255,255,255,0.1)',
                 color: isUser ? '#fff' : theme.accentColor,
                 border: `2px solid ${theme.accentColor}40`,
                 boxShadow: `0 2px 12px ${theme.accentColor}30`,
+                cursor: hasImage && onImageClick ? 'zoom-in' : 'default',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': hasImage && onImageClick ? {
+                  transform: 'scale(1.12)',
+                  boxShadow: `0 4px 18px ${theme.accentColor}50`,
+                } : {},
               }}
             >
-              {isUser ? <PersonIcon sx={{ fontSize: 18 }} /> : character.name[0]}
+              {isUser ? <PersonIcon sx={{ fontSize: 22 }} /> : character.name[0]}
             </Avatar>
           )}
         </Box>
@@ -238,18 +280,58 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 />
               )}
               {isLastInGroup && (
-                <Typography
-                  variant="caption"
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: isUser ? 'flex-end' : 'flex-start', gap: 0.8, mt: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{ opacity: 0.5, fontSize: '0.7rem' }}
+                  >
+                    {new Date(message.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                  </Typography>
+                  {message.isEdited && (
+                    <Typography variant="caption" sx={{ opacity: 0.45, fontSize: '0.65rem', color: '#ffd700' }}>
+                      수정됨
+                    </Typography>
+                  )}
+                  {!isUser && message.tokenCost !== undefined && (
+                    <Typography variant="caption" sx={{ opacity: 0.35, fontSize: '0.65rem', color: '#a8e6cf' }}>
+                      -{message.tokenCost}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+              {/* Regenerate / Edit 버튼 */}
+              {hovered && !isSending && isLastInGroup && (
+                <Box
                   sx={{
-                    display: 'block',
-                    textAlign: isUser ? 'right' : 'left',
-                    opacity: 0.5,
+                    display: 'flex',
+                    justifyContent: isUser ? 'flex-end' : 'flex-start',
+                    gap: 0.5,
                     mt: 0.5,
-                    fontSize: '0.7rem',
                   }}
                 >
-                  {new Date(message.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
+                  {!isUser && isLastAiMessage && onRegenerate && (
+                    <Tooltip title="응답 재생성">
+                      <IconButton
+                        size="small"
+                        onClick={onRegenerate}
+                        sx={{ color: 'rgba(255,255,255,0.45)', p: 0.4, '&:hover': { color: theme.accentColor } }}
+                      >
+                        <RefreshIcon sx={{ fontSize: 15 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {onEdit && (
+                    <Tooltip title="메시지 수정">
+                      <IconButton
+                        size="small"
+                        onClick={() => onEdit(messageIndex, message.content)}
+                        sx={{ color: 'rgba(255,255,255,0.45)', p: 0.4, '&:hover': { color: theme.accentColor } }}
+                      >
+                        <EditIcon sx={{ fontSize: 15 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
               )}
             </>
           ) : (
@@ -319,6 +401,7 @@ interface ChatContentProps {
 const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character }) => {
   const router = useRouter();
   const { getLocalePath } = useLocaleNavigation();
+  const { user } = useAuth();
   const { theme, mood, setIntimacyLevel, setExcitementLevel, intimacyLevel, excitementLevel } = useMood();
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -340,6 +423,25 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [loadingDebug, setLoadingDebug] = useState(false);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const [remainingTokens, setRemainingTokens] = useState<number | null>(null);
+
+  // Edit 모달 상태
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [editContent, setEditContent] = useState('');
+
+  // 공유 모달 상태
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+
+  // 분기 패널 상태
+  const [showBranchPanel, setShowBranchPanel] = useState(false);
+
+  useEffect(() => {
+    if (user?.tokens !== undefined) {
+      setRemainingTokens(user.tokens);
+    }
+  }, [user?.tokens]);
 
   // 메시지 통계
   const messageStats = useMemo(() => {
@@ -494,13 +596,28 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
         reply?: string;
         suggestedReplies?: string[];
         state?: SessionState;
+        tokenCost?: number;
+        tokensUsed?: number;
       }) => {
         const finalReply = payload?.reply || fullResponse;
+        const tokenCostValue = payload?.tokenCost;
 
         // AI 응답 분석해서 게이지 업데이트
         const { intimacyBoost, excitementBoost } = analyzeMessageMood(finalReply);
         setIntimacyLevel(Math.min(100, intimacyLevel + intimacyBoost * 1.5));
         setExcitementLevel(Math.min(100, excitementLevel + excitementBoost * 1.5));
+
+        // 토큰 차감 및 잔액 업데이트
+        if (tokenCostValue) {
+          setRemainingTokens((prev) => {
+            const next = Math.max(0, (prev ?? 0) - tokenCostValue);
+            if (next <= 10 && (prev === null || prev > 10)) {
+              setToast({ message: `토큰이 ${next}개 남았습니다. 충전이 필요해요!`, severity: 'error' });
+            }
+            return next;
+          });
+        }
+
         setChat((prev) => {
           if (!prev) return prev;
 
@@ -510,6 +627,7 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
               ...updated[updated.length - 1],
               content: finalReply,
               timestamp: new Date(),
+              tokenCost: tokenCostValue,
               suggestedReplies:
                 payload?.suggestedReplies && payload.suggestedReplies.length > 0
                   ? payload.suggestedReplies
@@ -587,6 +705,185 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
     setMessage(suggestion);
   };
 
+  // ==================== 분기 핸들러 ====================
+  const handleCreateBranch = async (branchPointIndex: number, label?: string) => {
+    try {
+      const result = await chatService.createBranch(id, branchPointIndex, label);
+      setChat((prev) => {
+        if (!prev) return prev;
+        const branches = [...(prev.branches || []), result.branch];
+        return { ...prev, branches, activeBranchIndex: result.branchIndex };
+      });
+      setToast({ message: '분기가 생성됐습니다.', severity: 'success' });
+    } catch (e: any) {
+      setToast({ message: e.message || '분기 생성 실패', severity: 'error' });
+    }
+  };
+
+  const handleSwitchBranch = async (branchIndex: number) => {
+    try {
+      const updated = await chatService.switchBranch(id, branchIndex);
+      setChat((prev) => {
+        if (!prev) return prev;
+        return { ...prev, activeBranchIndex: updated.activeBranchIndex ?? branchIndex };
+      });
+    } catch (e: any) {
+      setToast({ message: e.message || '분기 전환 실패', severity: 'error' });
+    }
+  };
+
+  const handleRenameBranch = async (branchIndex: number, label: string) => {
+    try {
+      await chatService.renameBranch(id, branchIndex, label);
+      setChat((prev) => {
+        if (!prev || !prev.branches) return prev;
+        const branches = prev.branches.map((b, i) => i === branchIndex ? { ...b, label } : b);
+        return { ...prev, branches };
+      });
+    } catch (e: any) {
+      setToast({ message: e.message || '이름 변경 실패', severity: 'error' });
+    }
+  };
+
+  const handleDeleteBranch = async (branchIndex: number) => {
+    try {
+      const updated = await chatService.deleteBranch(id, branchIndex);
+      setChat((prev) => {
+        if (!prev) return prev;
+        return { ...prev, branches: updated.branches ?? [], activeBranchIndex: updated.activeBranchIndex ?? -1 };
+      });
+      setToast({ message: '분기가 삭제됐습니다.', severity: 'success' });
+    } catch (e: any) {
+      setToast({ message: e.message || '분기 삭제 실패', severity: 'error' });
+    }
+  };
+
+  // 현재 활성 메시지 목록 (메인 or 분기)
+  const activeMessages = (() => {
+    const bi = chat.activeBranchIndex ?? -1;
+    if (bi === -1 || !chat.branches?.[bi]) return chat.messages;
+    const branch = chat.branches[bi];
+    return [
+      ...chat.messages.slice(0, branch.branchPointIndex),
+      ...branch.messages,
+    ];
+  })();
+
+  const handleRegenerate = () => {
+    if (isSending) return;
+    streamRef.current?.cancel();
+
+    // 마지막 AI 메시지를 빈 버블로 교체 (스트리밍 준비)
+    setChat((prev) => {
+      if (!prev) return prev;
+      const msgs = [...prev.messages];
+      if (msgs[msgs.length - 1]?.sender !== 'ai') return prev;
+      msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: '' };
+      return { ...prev, messages: msgs };
+    });
+    setIsSending(true);
+
+    streamRef.current = chatService.regenerateMessage(id, {
+      onChunk: (chunk, fullText) => {
+        setChat((prev) => {
+          if (!prev) return prev;
+          const msgs = [...prev.messages];
+          if (msgs[msgs.length - 1]?.sender === 'ai') {
+            msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: fullText };
+          }
+          return { ...prev, messages: msgs };
+        });
+      },
+      onDone: (payload) => {
+        setChat((prev) => {
+          if (!prev) return prev;
+          const msgs = [...prev.messages];
+          if (msgs[msgs.length - 1]?.sender === 'ai') {
+            msgs[msgs.length - 1] = {
+              ...msgs[msgs.length - 1],
+              content: payload?.reply || msgs[msgs.length - 1].content,
+              suggestedReplies: payload?.suggestedReplies,
+              tokenCost: payload?.tokenCost,
+            };
+          }
+          return { ...prev, messages: msgs, sessionState: payload?.state || prev.sessionState };
+        });
+        if (payload?.tokenCost) setRemainingTokens((t) => (t !== null ? t - payload.tokenCost! : null));
+        setIsSending(false);
+      },
+      onError: (err) => {
+        setError(err.message || '재생성 중 오류가 발생했습니다.');
+        setIsSending(false);
+      },
+    });
+  };
+
+  const handleOpenEdit = (index: number, currentContent: string) => {
+    setEditingIndex(index);
+    setEditContent(currentContent);
+    setEditModalOpen(true);
+  };
+
+  const handleConfirmEdit = () => {
+    if (!editContent.trim() || editingIndex < 0) return;
+    const originalMsg = chat.messages[editingIndex];
+    if (editContent === originalMsg.content) {
+      setEditModalOpen(false);
+      return;
+    }
+    setEditModalOpen(false);
+    streamRef.current?.cancel();
+
+    const isUserMsg = originalMsg.sender === 'user';
+
+    // 수정된 메시지 + 이후 메시지 제거 + AI 버블 준비
+    setChat((prev) => {
+      if (!prev) return prev;
+      const msgs = prev.messages.slice(0, editingIndex + 1).map((m, i) =>
+        i === editingIndex ? { ...m, content: editContent, isEdited: true } : m
+      );
+      if (isUserMsg) msgs.push({ sender: 'ai', content: '', timestamp: new Date() });
+      return { ...prev, messages: msgs };
+    });
+
+    if (!isUserMsg) return; // AI 메시지 수정은 재스트림 없음
+
+    setIsSending(true);
+    streamRef.current = chatService.editMessage(id, editingIndex, editContent, {
+      onChunk: (chunk, fullText) => {
+        setChat((prev) => {
+          if (!prev) return prev;
+          const msgs = [...prev.messages];
+          if (msgs[msgs.length - 1]?.sender === 'ai') {
+            msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: fullText };
+          }
+          return { ...prev, messages: msgs };
+        });
+      },
+      onDone: (payload) => {
+        setChat((prev) => {
+          if (!prev) return prev;
+          const msgs = [...prev.messages];
+          if (msgs[msgs.length - 1]?.sender === 'ai') {
+            msgs[msgs.length - 1] = {
+              ...msgs[msgs.length - 1],
+              content: payload?.reply || msgs[msgs.length - 1].content,
+              suggestedReplies: payload?.suggestedReplies,
+              tokenCost: payload?.tokenCost,
+            };
+          }
+          return { ...prev, messages: msgs, sessionState: payload?.state || prev.sessionState };
+        });
+        if (payload?.tokenCost) setRemainingTokens((t) => (t !== null ? t - payload.tokenCost! : null));
+        setIsSending(false);
+      },
+      onError: (err) => {
+        setError(err.message || '메시지 수정 중 오류가 발생했습니다.');
+        setIsSending(false);
+      },
+    });
+  };
+
   const currentMode = chat?.mode || ChatMode.CHAT;
   const currentModeConfig = MODE_CONFIG[currentMode];
   const ModeIcon = currentModeConfig?.icon || ChatBubbleOutlineIcon;
@@ -606,6 +903,23 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
 
   return (
     <MoodBackground>
+      {/* 프로필 이미지 미리보기 */}
+      <Dialog
+        open={imagePreviewOpen}
+        onClose={() => setImagePreviewOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: '#000', borderRadius: 3, overflow: 'hidden', m: 2 } }}
+      >
+        <Box
+          component="img"
+          src={character.profileImage || character.imageUrl}
+          alt={character.name}
+          onClick={() => setImagePreviewOpen(false)}
+          sx={{ width: '100%', height: 'auto', maxHeight: '85vh', objectFit: 'contain', display: 'block', cursor: 'zoom-out' }}
+        />
+      </Dialog>
+
       <Box
         sx={{
           minHeight: '100vh',
@@ -615,6 +929,24 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
           pb: 2,
         }}
       >
+        {/* 풀스크린 탈출 버튼 */}
+        {isFullscreen && (
+          <Box sx={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+            <IconButton
+              onClick={() => setIsFullscreen(false)}
+              sx={{
+                color: 'rgba(255,255,255,0.7)',
+                bgcolor: 'rgba(0,0,0,0.45)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                '&:hover': { color: '#fff', bgcolor: 'rgba(0,0,0,0.65)' },
+              }}
+            >
+              <FullscreenExitIcon />
+            </IconButton>
+          </Box>
+        )}
+
         <Container maxWidth={isFullscreen ? false : 'lg'} sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* 상단 컨트롤 바 */}
           {!isFullscreen && (
@@ -640,11 +972,18 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                   <Stack direction="row" alignItems="center" gap={2}>
                     <Avatar
                       src={character.profileImage || character.imageUrl}
+                      onClick={() => (character.profileImage || character.imageUrl) && setImagePreviewOpen(true)}
                       sx={{
-                        width: 60,
-                        height: 60,
+                        width: { xs: 64, md: 80 },
+                        height: { xs: 64, md: 80 },
                         border: `2px solid ${theme.accentColor}`,
                         boxShadow: `0 0 26px ${theme.accentColor}36`,
+                        cursor: (character.profileImage || character.imageUrl) ? 'zoom-in' : 'default',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': (character.profileImage || character.imageUrl) ? {
+                          transform: 'scale(1.06)',
+                          boxShadow: `0 0 36px ${theme.accentColor}60`,
+                        } : {},
                       }}
                     >
                       {character.name[0]}
@@ -762,6 +1101,12 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                     label="메시지"
                     value={`${messageStats.user + messageStats.ai}`}
                     color="rgba(255,255,255,0.9)"
+                  />
+                  <HeaderMetric
+                    icon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
+                    label="남은 토큰"
+                    value={remainingTokens !== null ? `${remainingTokens}` : '...'}
+                    color={remainingTokens !== null && remainingTokens <= 10 ? '#ff5f5f' : '#a8e6cf'}
                   />
                 </Stack>
 
@@ -899,8 +1244,14 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
               <SmartToyIcon sx={{ mr: 1.5, color: '#1d9bf0' }} /> Grok
             </MenuItem>
             <Divider />
-            <MenuItem onClick={() => setShowMemoryPanel(!showMemoryPanel)}>
+            <MenuItem onClick={() => { setShowMemoryPanel(!showMemoryPanel); setAnchorEl(null); }}>
               <HistoryIcon sx={{ mr: 1.5 }} /> 메모리 패널
+            </MenuItem>
+            <MenuItem onClick={() => { setShowBranchPanel(!showBranchPanel); setAnchorEl(null); }}>
+              <AccountTreeIcon sx={{ mr: 1.5 }} /> 대화 분기
+            </MenuItem>
+            <MenuItem onClick={() => { setShareModalOpen(true); setAnchorEl(null); }} disabled={chat.messages.length === 0}>
+              <IosShareIcon sx={{ mr: 1.5 }} /> 대화 공유
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleDeleteChat} sx={{ color: 'error.main' }}>
@@ -929,6 +1280,20 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
             >
               <MemoryPanel chatId={id} characterId={chat.character} />
             </Box>
+          </Collapse>
+
+          {/* 분기 패널 */}
+          <Collapse in={showBranchPanel}>
+            <BranchPanel
+              branches={chat.branches || []}
+              activeBranchIndex={chat.activeBranchIndex ?? -1}
+              totalMessages={chat.messages.length}
+              onCreateBranch={handleCreateBranch}
+              onSwitchBranch={handleSwitchBranch}
+              onRenameBranch={handleRenameBranch}
+              onDeleteBranch={handleDeleteBranch}
+              accentColor={theme.accentColor}
+            />
           </Collapse>
 
           {/* 메시지 영역 */}
@@ -1001,16 +1366,22 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
                 </Stack>
               </Box>
             ) : (
-              chat.messages.map((msg, index) => {
-                const isLastInGroup = index === chat.messages.length - 1 || chat.messages[index + 1]?.sender !== msg.sender;
+              activeMessages.map((msg, index) => {
+                const isLastInGroup = index === activeMessages.length - 1 || activeMessages[index + 1]?.sender !== msg.sender;
+                const lastAiIndex = activeMessages.reduce((acc, m, i) => (m.sender === 'ai' ? i : acc), -1);
                 return (
                   <MessageBubble
                     key={index}
                     message={msg}
+                    messageIndex={index}
                     character={character}
                     isLastInGroup={isLastInGroup}
                     isSending={isSending}
-                    isLast={index === chat.messages.length - 1}
+                    isLast={index === activeMessages.length - 1}
+                    isLastAiMessage={msg.sender === 'ai' && index === lastAiIndex}
+                    onImageClick={() => setImagePreviewOpen(true)}
+                    onRegenerate={!isSending ? handleRegenerate : undefined}
+                    onEdit={!isSending ? handleOpenEdit : undefined}
                   />
                 );
               })
@@ -1156,23 +1527,87 @@ const ChatContent: React.FC<ChatContentProps> = ({ id, chat, setChat, character 
         <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError('')} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
           <Alert severity="error">{error}</Alert>
         </Snackbar>
+
+        {/* 대화 공유 모달 */}
+        <ShareChatCard
+          open={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          messages={chat.messages}
+          characterName={character.name}
+          characterImage={character.profileImage || character.imageUrl}
+          userName="나"
+        />
+
+        {/* 메시지 수정 모달 */}
+        <Dialog
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{ sx: { bgcolor: '#1e1e2e', borderRadius: 3, border: '1px solid rgba(255,255,255,0.08)' } }}
+        >
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h6" fontWeight={700} color="#fff" sx={{ mb: 2 }}>
+              메시지 수정
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              minRows={3}
+              maxRows={8}
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              autoFocus
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: '#fff',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: 'rgba(255,255,255,0.12)' },
+                  '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.25)' },
+                  '&.Mui-focused fieldset': { borderColor: theme.accentColor },
+                },
+              }}
+            />
+            {chat.messages[editingIndex]?.sender === 'user' && (
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', mt: 1, display: 'block' }}>
+                수정 후 이후 대화가 삭제되고 AI가 새로 응답합니다.
+              </Typography>
+            )}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 2 }}>
+              <Button onClick={() => setEditModalOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                취소
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleConfirmEdit}
+                disabled={!editContent.trim() || editContent === chat.messages[editingIndex]?.content}
+                sx={{ bgcolor: theme.accentColor, '&:hover': { bgcolor: theme.accentColor, filter: 'brightness(1.1)' } }}
+              >
+                수정
+              </Button>
+            </Box>
+          </Box>
+        </Dialog>
       </Box>
     </MoodBackground>
   );
 };
 
 // 메인 페이지 컴포넌트
-export default function ChatPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { getLocalePath } = useLocaleNavigation();
-  const { user, isAuthenticated, openLoginModal } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, openLoginModal } = useAuth();
   const [chat, setChat] = useState<Chat | null>(null);
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!isAuthenticated) {
       openLoginModal('채팅을 이용하려면 로그인이 필요해요', getLocalePath(`/chat/${id}`));
       setIsLoading(false);
@@ -1195,7 +1630,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     };
 
     fetchData();
-  }, [getLocalePath, id, isAuthenticated, router, openLoginModal]);
+  }, [authLoading, getLocalePath, id, isAuthenticated, router, openLoginModal]);
 
   if (isLoading) {
     return (

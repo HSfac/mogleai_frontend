@@ -46,6 +46,22 @@ export const authService = {
     return !!this.getToken();
   },
 
+  // 토큰 갱신
+  async refreshToken() {
+    const response = await api.post('/auth/refresh-token');
+    const newToken = response.data?.access_token;
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+    }
+    return response.data;
+  },
+
+  // 소셜 로그인 유저 어드민 토큰 교환
+  async exchangeAdminToken() {
+    const response = await api.post('/auth/admin/exchange-token');
+    return response.data;
+  },
+
   // 비밀번호 재설정 요청
   async requestPasswordReset(email: string) {
     const response = await api.post('/auth/password-reset/request', { email });

@@ -669,8 +669,8 @@ export default function ProfilePage() {
                   )
                 ) : (
                   <Stack spacing={2}>
-                    {favoriteCharacters.map((character) => (
-                      <Card key={character._id} sx={panelSx}>
+                    {favoriteCharacters.map((character, idx) => (
+                      <Card key={character._id ?? idx} sx={panelSx}>
                         <CardContent sx={{ p: 2.25 }}>
                           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
                             <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexGrow: 1, minWidth: 0 }}>

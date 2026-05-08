@@ -18,6 +18,7 @@ import {
   FormControlLabel,
   Checkbox,
   alpha,
+  keyframes,
 } from '@mui/material';
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -31,6 +32,19 @@ import HomeIcon from '@mui/icons-material/Home';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 import { useLocaleNavigation } from '@/hooks/useLocaleNavigation';
+
+const rotateAnim = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+const rotateReverse = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+`;
+const softGlow = keyframes`
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+`;
 
 const socialPlatforms = [
   { name: 'google', icon: <GoogleIcon />, color: '#DB4437' },
@@ -151,8 +165,8 @@ export default function RegisterPage() {
               <Typography variant="h3" fontWeight={900} sx={{ color: '#fff', mb: 2 }}>
                 회원가입
               </Typography>
-              <Typography variant="body1" sx={{ color: '#999' }}>
-                몽글AI에서 특별한 경험을 시작하세요
+              <Typography variant="body1" sx={{ color: '#555', letterSpacing: '0.02em' }}>
+                처음 뵙겠습니다.
               </Typography>
             </Box>
 
@@ -344,32 +358,137 @@ export default function RegisterPage() {
           </Container>
         </Box>
 
-        {/* Right Side - Mascot Image */}
+        {/* Right Side - Abstract Visual */}
         <Box
           sx={{
             flex: 1,
             display: { xs: 'none', md: 'flex' },
             alignItems: 'center',
             justifyContent: 'center',
-            bgcolor: '#0f0f0f',
-            borderLeft: '1px solid #1a1a1a',
             position: 'relative',
             overflow: 'hidden',
+            background: '#060610',
+            borderLeft: '1px solid rgba(255,255,255,0.04)',
           }}
         >
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%)',
-            }}
-          >
-            <Box sx={{ fontSize: '15rem', opacity: 0.3, filter: 'blur(2px)' }}>
-              ✨
-            </Box>
+          {/* Dot grid */}
+          <Box sx={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Ambient glow */}
+          <Box sx={{
+            position: 'absolute',
+            width: 560,
+            height: 560,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,51,102,0.07) 0%, transparent 65%)',
+            filter: 'blur(30px)',
+            animation: `${softGlow} 5s ease-in-out infinite`,
+            pointerEvents: 'none',
+          }} />
+          <Box sx={{
+            position: 'absolute',
+            bottom: '12%',
+            right: '10%',
+            width: 260,
+            height: 260,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(80,40,160,0.07) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+          }} />
+
+          {/* Outer static ring */}
+          <Box sx={{
+            position: 'absolute',
+            width: 500,
+            height: 500,
+            borderRadius: '50%',
+            border: '1px solid rgba(255,255,255,0.03)',
+          }} />
+
+          {/* Middle ring — clockwise */}
+          <Box sx={{
+            position: 'absolute',
+            width: 350,
+            height: 350,
+            borderRadius: '50%',
+            border: '1px solid rgba(255,51,102,0.11)',
+            animation: `${rotateAnim} 40s linear infinite`,
+          }}>
+            <Box sx={{
+              position: 'absolute',
+              top: -3,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255,51,102,0.55)',
+              boxShadow: '0 0 8px rgba(255,51,102,0.4)',
+            }} />
+            {/* Second satellite at 180° */}
+            <Box sx={{
+              position: 'absolute',
+              bottom: -3,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255,51,102,0.3)',
+            }} />
+          </Box>
+
+          {/* Inner ring — counter-clockwise */}
+          <Box sx={{
+            position: 'absolute',
+            width: 210,
+            height: 210,
+            borderRadius: '50%',
+            border: '1px solid rgba(255,51,102,0.22)',
+            animation: `${rotateReverse} 24s linear infinite`,
+          }}>
+            <Box sx={{
+              position: 'absolute',
+              top: -5,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              bgcolor: '#ff3366',
+              boxShadow: '0 0 14px #ff3366, 0 0 28px rgba(255,51,102,0.35)',
+            }} />
+          </Box>
+
+          {/* Core */}
+          <Box sx={{
+            position: 'absolute',
+            width: 12,
+            height: 12,
+            borderRadius: '50%',
+            bgcolor: '#fff',
+            boxShadow: '0 0 18px rgba(255,255,255,0.5), 0 0 36px rgba(255,51,102,0.25)',
+            animation: `${softGlow} 3s ease-in-out infinite`,
+          }} />
+
+          {/* Wordmark */}
+          <Box sx={{ position: 'absolute', bottom: 36, left: 0, right: 0, textAlign: 'center' }}>
+            <Typography sx={{
+              color: 'rgba(255,255,255,0.13)',
+              fontSize: '0.62rem',
+              letterSpacing: 9,
+              textTransform: 'uppercase',
+              fontWeight: 300,
+            }}>
+              monglai
+            </Typography>
           </Box>
         </Box>
       </Box>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, use } from 'react';
 import {
   Alert,
   Avatar,
@@ -55,8 +55,9 @@ const getLevelAccent = (creatorLevel?: string) => {
 export default function CreatorProfilePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = use(params);
   const { user, refreshUser, isAuthenticated, openLoginModal } = useAuth();
   const { getLocalePath, router } = useLocaleNavigation();
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
@@ -73,8 +74,8 @@ export default function CreatorProfilePage({
 
       try {
         const [creatorProfile, creatorCharacters] = await Promise.all([
-          userService.getCreatorProfile(params.id),
-          characterService.getPublicCreatorCharacters(params.id),
+          userService.getCreatorProfile(id),
+          characterService.getPublicCreatorCharacters(id),
         ]);
 
         setCreator(creatorProfile);
@@ -87,10 +88,10 @@ export default function CreatorProfilePage({
       }
     };
 
-    if (params.id) {
+    if (id) {
       loadCreator();
     }
-  }, [params.id]);
+  }, [id]);
 
   const isOwner = creator?._id && user?._id === creator._id;
   const followerCount = creator?.stats?.followerCount || 0;

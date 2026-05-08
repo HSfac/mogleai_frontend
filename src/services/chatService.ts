@@ -68,23 +68,40 @@ export const chatService = {
     return response.data;
   },
 
+  // ==================== 대화 분기 ====================
+
+  async createBranch(chatId: string, branchPointIndex: number, label?: string) {
+    const response = await api.post(`/chat/${chatId}/branches`, { branchPointIndex, label });
+    return response.data;
+  },
+
+  async switchBranch(chatId: string, branchIndex: number) {
+    const response = await api.put(`/chat/${chatId}/branches/switch`, { branchIndex });
+    return response.data;
+  },
+
+  async renameBranch(chatId: string, branchIndex: number, label: string) {
+    const response = await api.put(`/chat/${chatId}/branches/${branchIndex}/rename`, { label });
+    return response.data;
+  },
+
+  async deleteBranch(chatId: string, branchIndex: number) {
+    const response = await api.delete(`/chat/${chatId}/branches/${branchIndex}`);
+    return response.data;
+  },
+
   /**
-   * SSE 스트리밍 메시지 전송
+   * SSE 스트리밍 공통 헬퍼
    */
-  streamMessage(
-    chatId: string,
-    content: string,
+  _streamSSE(
+    url: string,
+    method: 'POST' | 'PUT',
+    body: object | null,
     handlers: {
       onChunk?: (chunk: string, fullText: string) => void;
-      onDone?: (payload?: {
-        reply?: string;
-        tokensUsed?: number;
-        tokenCost?: number;
-        suggestedReplies?: string[];
-        state?: SessionState;
-      }) => void;
+      onDone?: (payload?: any) => void;
       onError?: (error: Error) => void;
-    } = {},
+    },
   ) {
     const controller = new AbortController();
 
@@ -96,13 +113,13 @@ export const chatService = {
           process.env.NEXT_PUBLIC_API_URL ||
           'http://localhost:5001';
 
-        const response = await fetch(`${baseURL}/chat/${chatId}/stream`, {
-          method: 'POST',
+        const response = await fetch(`${baseURL}${url}`, {
+          method,
           headers: {
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ content }),
+          body: body ? JSON.stringify(body) : undefined,
           signal: controller.signal,
         });
 
@@ -147,8 +164,75 @@ export const chatService = {
       }
     })();
 
-    return {
-      cancel: () => controller.abort(),
-    };
+    return { cancel: () => controller.abort() };
+  },
+
+  /**
+   * SSE 스트리밍 메시지 전송
+   */
+  streamMessage(
+    chatId: string,
+    content: string,
+    handlers: {
+      onChunk?: (chunk: string, fullText: string) => void;
+      onDone?: (payload?: {
+        reply?: string;
+        tokensUsed?: number;
+        tokenCost?: number;
+        suggestedReplies?: string[];
+        state?: SessionState;
+      }) => void;
+      onError?: (error: Error) => void;
+    } = {},
+  ) {
+    return this._streamSSE(`/chat/${chatId}/stream`, 'POST', { content }, handlers);
+  },
+
+  /**
+   * AI 응답 재생성
+   */
+  regenerateMessage(
+    chatId: string,
+    handlers: {
+      onChunk?: (chunk: string, fullText: string) => void;
+      onDone?: (payload?: {
+        reply?: string;
+        tokensUsed?: number;
+        tokenCost?: number;
+        suggestedReplies?: string[];
+        state?: SessionState;
+      }) => void;
+      onError?: (error: Error) => void;
+    } = {},
+  ) {
+    return this._streamSSE(`/chat/${chatId}/regenerate`, 'POST', {}, handlers);
+  },
+
+  /**
+   * 메시지 수정 후 재스트림
+   */
+  editMessage(
+    chatId: string,
+    messageIndex: number,
+    newContent: string,
+    handlers: {
+      onChunk?: (chunk: string, fullText: string) => void;
+      onDone?: (payload?: {
+        reply?: string;
+        tokensUsed?: number;
+        tokenCost?: number;
+        suggestedReplies?: string[];
+        state?: SessionState;
+        edited?: boolean;
+      }) => void;
+      onError?: (error: Error) => void;
+    } = {},
+  ) {
+    return this._streamSSE(
+      `/chat/${chatId}/messages/${messageIndex}`,
+      'PUT',
+      { newContent },
+      handlers,
+    );
   },
 };
