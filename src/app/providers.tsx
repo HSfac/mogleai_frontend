@@ -2,10 +2,11 @@
 
 import { ThemeProvider, createTheme, responsiveFontSizes } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
+import { initSentry } from '@/lib/sentry';
 
 const createEmotionCache = () => {
   return createCache({ key: 'css', prepend: true });
@@ -162,6 +163,10 @@ const theme = responsiveFontSizes(baseTheme);
 
 export function Providers({ children }: { children: ReactNode }) {
   const [emotionCache] = useState(createEmotionCache());
+
+  useEffect(() => {
+    initSentry();
+  }, []);
 
   return (
     <CacheProvider value={emotionCache}>

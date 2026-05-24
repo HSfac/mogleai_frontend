@@ -194,7 +194,8 @@ export default function CharactersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tabValue, setTabValue] = useState<'recommend' | 'popular'>('recommend');
+  const [tabValue, setTabValue] = useState<'recommend' | 'popular' | 'following'>('recommend');
+  const [followingFeed, setFollowingFeed] = useState<Character[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
 
   useEffect(() => {
@@ -202,13 +203,25 @@ export default function CharactersPage() {
     loadPopularCharacters();
     if (isAuthenticated) {
       loadFavorites();
+      loadFollowingFeed();
     }
   }, [isAuthenticated]);
 
   const loadCharacters = async () => {
     setLoading(true);
     try {
-      const data = await characterService.getCharacters();
+      // 로그인한 경우 추천 피드, 아니면 전체 목록
+      let data: Character[];
+      if (isAuthenticated) {
+        try {
+          const res = await api.get('/characters/feed/recommended');
+          data = res.data || [];
+        } catch {
+          data = await characterService.getCharacters();
+        }
+      } else {
+        data = await characterService.getCharacters();
+      }
       setCharacters(data);
     } catch (error) {
       console.error('캐릭터 목록을 불러오는데 실패했습니다:', error);
@@ -232,6 +245,15 @@ export default function CharactersPage() {
       setFavorites(response.data?.map((item: any) => (item._id ? item._id : item)));
     } catch (error) {
       console.error('즐겨찾기 불러오기 실패:', error);
+    }
+  };
+
+  const loadFollowingFeed = async () => {
+    try {
+      const response = await api.get('/characters/feed/following');
+      setFollowingFeed(response.data || []);
+    } catch (error) {
+      console.error('팔로우 피드 불러오기 실패:', error);
     }
   };
 
@@ -279,7 +301,7 @@ export default function CharactersPage() {
     }
   };
 
-  const baseCharacters = tabValue === 'recommend' ? characters : popularCharacters;
+  const baseCharacters = tabValue === 'recommend' ? characters : tabValue === 'popular' ? popularCharacters : followingFeed;
   const displayedCharacters = baseCharacters.filter((c) => {
     if (adultFilter === 'safe' && c.isAdultContent) return false;
     if (adultFilter === 'adult' && !c.isAdultContent) return false;
@@ -568,8 +590,9 @@ export default function CharactersPage() {
                 },
               }}
             >
-              <Tab label="추천" value="recommend" />
+              <Tab label={isAuthenticated ? "맞춤 추천" : "추천"} value="recommend" />
               <Tab label="인기" value="popular" />
+              {isAuthenticated && <Tab label="팔로우" value="following" />}
             </Tabs>
 
             {/* 필터 버튼 (모바일) */}

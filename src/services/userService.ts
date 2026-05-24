@@ -46,4 +46,10 @@ export const userService = {
     const response = await api.delete(`/users/me/favorites/${characterId}`);
     return response.data;
   },
+
+  // 자동 충전 설정
+  async updateAutoRecharge(data: { enabled: boolean; threshold?: number; packageId?: string }) {
+    const response = await api.put('/users/me/auto-recharge', data);
+    return response.data;
+  },
 };

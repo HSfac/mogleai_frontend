@@ -325,7 +325,7 @@ export default function TokensPage() {
             />
           </Stack>
 
-          <Grid container spacing={2.5}>
+          <Grid container spacing={2.5} justifyContent="center">
             {packages.map((pkg) => {
               const totalTokens = pkg.tokens + (pkg.bonus || 0);
               const isLoading = paymentLoading && selectedPackage?.id === pkg.id;
@@ -846,6 +846,60 @@ export default function TokensPage() {
               </Stack>
             ))}
           </Stack>
+        </Box>
+      </Container>
+
+      {/* 플랜 비교 테이블 */}
+      <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
+        <Typography variant="h5" fontWeight={800} color="#f6f7fb" textAlign="center" mb={1}>
+          플랜 비교
+        </Typography>
+        <Typography variant="body2" color="rgba(240,242,250,0.5)" textAlign="center" mb={4}>
+          내 사용 패턴에 맞는 플랜을 선택하세요
+        </Typography>
+        <Box sx={{ overflowX: 'auto' }}>
+          <Box sx={{ minWidth: 560 }}>
+            {/* 헤더 */}
+            <Grid container sx={{ mb: 1 }}>
+              <Grid item xs={4} />
+              {[
+                { name: '베이직', color: '#7cc7ff' },
+                { name: '스탠다드', color: '#ff5f9b' },
+                { name: '프리미엄', color: '#f38bff' },
+              ].map(({ name, color }) => (
+                <Grid item xs={8 / 3} key={name} sx={{ textAlign: 'center' }}>
+                  <Typography fontWeight={700} sx={{ color, fontSize: '0.9rem' }}>{name}</Typography>
+                </Grid>
+              ))}
+            </Grid>
+            {/* 행들 */}
+            {[
+              { label: '월 토큰', values: ['300', '1,000', '5,000'] },
+              { label: '토큰당 가격', values: ['₩33', '₩20', '₩10'] },
+              { label: '월 요금', values: ['₩9,900', '₩19,900', '₩49,900'] },
+              { label: '우선 지원', values: [false, true, true] },
+              { label: '전담 지원', values: [false, false, true] },
+              { label: '자동 충전', values: [true, true, true] },
+              { label: '언제든 취소', values: [true, true, true] },
+            ].map(({ label, values }) => (
+              <Box key={label} sx={{ display: 'flex', alignItems: 'center', py: 1.2, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <Box sx={{ width: '33.3%', flexShrink: 0 }}>
+                  <Typography variant="body2" color="rgba(240,242,250,0.6)" fontSize="0.85rem">{label}</Typography>
+                </Box>
+                {values.map((val, i) => (
+                  <Box key={i} sx={{ width: '22.2%', textAlign: 'center', flexShrink: 0 }}>
+                    {typeof val === 'boolean' ? (
+                      val
+                        ? <CheckCircleIcon sx={{ fontSize: 18, color: '#4caf50' }} />
+                        : <Typography color="rgba(255,255,255,0.2)" fontSize="0.9rem">—</Typography>
+                    ) : (
+                      <Typography variant="body2" color="#f6f7fb" fontWeight={600} fontSize="0.85rem">{val}</Typography>
+                    )}
+                  </Box>
+                ))}
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Container>
 
